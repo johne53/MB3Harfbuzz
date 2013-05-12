@@ -31,8 +31,8 @@
 
 #include "hb-buffer-private.hh"
 
-#include "hb-ot-layout-private.hh"
 
+struct hb_ot_shape_plan_t;
 
 static const hb_tag_t table_tags[2] = {HB_OT_TAG_GSUB, HB_OT_TAG_GPOS};
 
@@ -118,15 +118,20 @@ struct hb_ot_map_t
   }
 
   HB_INTERNAL void collect_lookups (unsigned int table_index, hb_set_t *lookups) const;
+  HB_INTERNAL inline void apply (unsigned int table_index,
+				 const struct hb_ot_shape_plan_t *plan,
+				 hb_font_t *font,
+				 hb_buffer_t *buffer) const;
   HB_INTERNAL void substitute (const struct hb_ot_shape_plan_t *plan, hb_font_t *font, hb_buffer_t *buffer) const;
   HB_INTERNAL void position (const struct hb_ot_shape_plan_t *plan, hb_font_t *font, hb_buffer_t *buffer) const;
 
   inline void finish (void) {
     features.finish ();
-    lookups[0].finish ();
-    lookups[1].finish ();
-    stages[0].finish ();
-    stages[1].finish ();
+    for (unsigned int table_index = 0; table_index < 2; table_index++)
+    {
+      lookups[table_index].finish ();
+      stages[table_index].finish ();
+    }
   }
 
   public:
@@ -145,7 +150,7 @@ struct hb_ot_map_t
 
   hb_prealloced_array_t<feature_map_t, 8> features;
   hb_prealloced_array_t<lookup_map_t, 32> lookups[2]; /* GSUB/GPOS */
-  hb_prealloced_array_t<stage_map_t, 1> stages[2]; /* GSUB/GPOS */
+  hb_prealloced_array_t<stage_map_t, 4> stages[2]; /* GSUB/GPOS */
 };
 
 enum hb_ot_map_feature_flags_t {
@@ -195,8 +200,10 @@ struct hb_ot_map_builder_t
 
   inline void finish (void) {
     feature_infos.finish ();
-    stages[0].finish ();
-    stages[1].finish ();
+    for (unsigned int table_index = 0; table_index < 2; table_index++)
+    {
+      stages[table_index].finish ();
+    }
   }
 
   private:
@@ -232,8 +239,8 @@ struct hb_ot_map_builder_t
   private:
 
   unsigned int current_stage[2]; /* GSUB/GPOS */
-  hb_prealloced_array_t<feature_info_t,16> feature_infos;
-  hb_prealloced_array_t<stage_info_t, 1> stages[2]; /* GSUB/GPOS */
+  hb_prealloced_array_t<feature_info_t, 32> feature_infos;
+  hb_prealloced_array_t<stage_info_t, 8> stages[2]; /* GSUB/GPOS */
 };
 
 
