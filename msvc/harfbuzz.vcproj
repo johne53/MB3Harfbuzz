@@ -44,7 +44,7 @@
 				AdditionalOptions="/FI$(TargetSxsFolder)\targetsxs.h"
 				Optimization="0"
 				AdditionalIncludeDirectories=".;&quot;$(GenericIncludeFolder)\pango-$(PangoApiVersion)&quot;;&quot;$(GenericIncludeFolder)\pango-$(PangoApiVersion)\pango&quot;;&quot;$(GenericLibraryFolder)\glib-2.0\include&quot;;&quot;$(GenericIncludeFolder)\freetype2&quot;;.."
-				PreprocessorDefinitions="_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;WIN32;DEBUG;_DEBUG;_WINDOWS;_LIB;_CRT_SECURE_NO_WARNINGS;HAVE_GLIB=1;HAVE_OT=1;HAVE_FREETYPE=1;PANGO_ENABLE_BACKEND;PANGO_ENABLE_ENGINE;G_LOG_DOMAIN=\&quot;Pango\&quot;"
+				PreprocessorDefinitions="WIN32;DEBUG;_DEBUG;_WINDOWS;_LIB;_CRT_SECURE_NO_WARNINGS;HAVE_GLIB=1;HAVE_OT=1;HAVE_FREETYPE=1;PANGO_ENABLE_BACKEND;PANGO_ENABLE_ENGINE;G_LOG_DOMAIN=\&quot;Pango\&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -70,82 +70,6 @@
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="$(OutDir)\$(LibPrefix)$(ProjectName)D.lib"
-				SuppressStartupBanner="true"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\Debug\libharfbuzz/libharfbuzz.bsc"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Debug 32 with Secure SCL|Win32"
-			OutputDirectory="$(PangoBuildProjectFolder)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(PangoBuildProjectFolder)\$(ConfigurationName)\obj\$(ProjectName)"
-			ConfigurationType="4"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops;.\harfbuzz.vsprops"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/FI$(TargetSxsFolder)\targetsxs.h"
-				Optimization="0"
-				AdditionalIncludeDirectories=".;&quot;$(GenericIncludeFolder)\pango-$(PangoApiVersion)&quot;;&quot;$(GenericIncludeFolder)\pango-$(PangoApiVersion)\pango&quot;;&quot;$(GenericLibraryFolder)\glib-2.0\include&quot;;&quot;$(GenericIncludeFolder)\freetype2&quot;;.."
-				PreprocessorDefinitions="_SECURE_SCL=1;_HAS_ITERATOR_DEBUGGING=1;WIN32;DEBUG;_DEBUG;_WINDOWS;_LIB;_CRT_SECURE_NO_WARNINGS;HAVE_GLIB=1;HAVE_OT=1;HAVE_FREETYPE=1;PANGO_ENABLE_BACKEND;PANGO_ENABLE_ENGINE;G_LOG_DOMAIN=\&quot;Pango\&quot;"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
-				StructMemberAlignment="0"
-				RuntimeTypeInfo="false"
-				PrecompiledHeaderFile=".\Debug\libharfbuzz/libharfbuzz.pch"
-				WarningLevel="3"
-				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
-				CompileAs="2"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="2057"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\$(LibPrefix)$(ProjectName)SCLD.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -331,15 +255,6 @@
 				>
 				<FileConfiguration
 					Name="Debug 32|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\$(InputName)1.obj"
-						XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug 32 with Secure SCL|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
