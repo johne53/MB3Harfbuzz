@@ -6,9 +6,6 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = src util test
 
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = harfbuzz.pc
-
 EXTRA_DIST = \
 	autogen.sh \
 	harfbuzz.doap \
@@ -28,7 +25,8 @@ MAINTAINERCLEANFILES = \
 # ChangeLog generation
 #
 CHANGELOG_RANGE =
-ChangeLog:
+ChangeLog: $(srcdir)/ChangeLog
+$(srcdir)/ChangeLog:
 	$(AM_V_GEN) if test -d "$(top_srcdir)/.git"; then \
 	  (GIT_DIR=$(top_srcdir)/.git $(top_srcdir)/missing --run \
 	   git log $(CHANGELOG_RANGE) --stat) | fmt --split-only > $@.tmp \
@@ -41,7 +39,7 @@ ChangeLog:
 	  (echo A git checkout and git-log is required to generate ChangeLog >&2 && \
 	  echo A git checkout and git-log is required to generate this file >> "$(srcdir)/$@"); \
 	fi
-.PHONY: $(srcdir)/ChangeLog
+.PHONY: ChangeLog $(srcdir)/ChangeLog
 
 
 #
