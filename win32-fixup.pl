@@ -6,13 +6,13 @@ require "../local-paths.lib";
 $api_version = "0.9";
 $pango_api_version = "1.0";
 $pango_current_minus_age = 0;
-$harfbuzz_version = "0.9.18";
+$harfbuzz_version = "0.9.19";
 $major = 0;
 $minor = 9;
-$micro = 18;
-$binary_age = 918;
+$micro = 19;
+$binary_age = 919;
 $interface_age = 0;
-$current_minus_age = 18;
+$current_minus_age = 19;
 
 sub process_file
 {
