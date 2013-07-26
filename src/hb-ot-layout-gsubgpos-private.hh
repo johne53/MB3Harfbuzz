@@ -977,7 +977,7 @@ static inline void recurse_lookups (context_t *c,
 				    const LookupRecord lookupRecord[] /* Array of LookupRecords--in design order */)
 {
   for (unsigned int i = 0; i < lookupCount; i++)
-    c->recurse (lookupRecord->lookupListIndex);
+    c->recurse (lookupRecord[i].lookupListIndex);
 }
 
 static inline bool apply_lookup (hb_apply_context_t *c,
@@ -1016,13 +1016,14 @@ static inline bool apply_lookup (hb_apply_context_t *c,
 
     lookupRecord++;
     lookupCount--;
-    /* Err, this is wrong if the lookup jumped over some glyphs */
-    i += c->buffer->idx - old_pos;
+    i++;
 
     if (!done)
       goto not_applied;
     else
     {
+      if (c->table_index == 1)
+        c->buffer->idx = old_pos + 1;
       /* Reinitialize iterator. */
       hb_apply_context_t::skipping_forward_iterator_t tmp (c, c->buffer->idx - 1, count - i);
       tmp.set_syllable (syllable);
@@ -1051,13 +1052,14 @@ static inline bool apply_lookup (hb_apply_context_t *c,
 
       lookupRecord++;
       lookupCount--;
-      /* Err, this is wrong if the lookup jumped over some glyphs */
-      i += c->buffer->idx - old_pos;
+      i++;
 
       if (!done)
 	goto not_applied2;
       else
       {
+	if (c->table_index == 1)
+	  c->buffer->idx = old_pos + 1;
         /* Reinitialize iterator. */
 	hb_apply_context_t::skipping_forward_iterator_t tmp (c, c->buffer->idx - 1, count - i);
 	tmp.set_syllable (syllable);
@@ -1665,7 +1667,7 @@ static inline void chain_context_closure_lookup (hb_closure_context_t *c,
    && intersects_array (c,
 			inputCount ? inputCount - 1 : 0, input,
 			lookup_context.funcs.intersects, lookup_context.intersects_data[1])
-  && intersects_array (c,
+   && intersects_array (c,
 		       lookaheadCount, lookahead,
 		       lookup_context.funcs.intersects, lookup_context.intersects_data[2]))
     recurse_lookups (c,

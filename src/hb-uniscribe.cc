@@ -32,9 +32,11 @@
 
 #include <windows.h>
 #include <usp10.h>
+#include <rpc.h>
 
 #include "hb-uniscribe.h"
 
+#include "hb-open-file-private.hh"
 #include "hb-ot-name-table.hh"
 #include "hb-ot-tag.h"
 
@@ -267,7 +269,130 @@ HB_SHAPER_DATA_ENSURE_DECLARE(uniscribe, font)
 struct hb_uniscribe_shaper_face_data_t {
   HANDLE fh;
   hb_uniscribe_shaper_funcs_t *funcs;
+  wchar_t face_name[LF_FACESIZE];
 };
+
+/* face_name should point to a wchar_t[LF_FACESIZE] object. */
+static void
+_hb_generate_unique_face_name (wchar_t *face_name, unsigned int *plen)
+{
+  /* We'll create a private name for the font from a UUID using a simple,
+   * somewhat base64-like encoding scheme */
+  const char *enc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
+  UUID id;
+  UuidCreate ((UUID*) &id);
+  unsigned int name_str_len = 0;
+  face_name[name_str_len++] = 'F';
+  face_name[name_str_len++] = '_';
+  unsigned char *p = (unsigned char *) &id;
+  for (unsigned int i = 0; i < 16; i += 2)
+  {
+    /* Spread the 16 bits from two bytes of the UUID across three chars of face_name,
+     * using the bits in groups of 5,5,6 to select chars from enc.
+     * This will generate 24 characters; with the 'F_' prefix we already provided,
+     * the name will be 26 chars (plus the NUL terminator), so will always fit within
+     * face_name (LF_FACESIZE = 32). */
+    face_name[name_str_len++] = enc[p[i] >> 3];
+    face_name[name_str_len++] = enc[((p[i] << 2) | (p[i + 1] >> 6)) & 0x1f];
+    face_name[name_str_len++] = enc[p[i + 1] & 0x3f];
+  }
+  face_name[name_str_len] = 0;
+  if (plen)
+    *plen = name_str_len;
+}
+
+/* Destroys blob. */
+static hb_blob_t *
+_hb_rename_font (hb_blob_t *blob, wchar_t *new_name)
+{
+  /* Create a copy of the font data, with the 'name' table replaced by a
+   * table that names the font with our private F_* name created above.
+   * For simplicity, we just append a new 'name' table and update the
+   * sfnt directory; the original table is left in place, but unused.
+   *
+   * The new table will contain just 5 name IDs: family, style, unique,
+   * full, PS. All of them point to the same name data with our unique name.
+   */
+
+  blob = OT::Sanitizer<OT::OpenTypeFontFile>::sanitize (blob);
+
+  unsigned int length, new_length, name_str_len;
+  const char *orig_sfnt_data = hb_blob_get_data (blob, &length);
+
+  _hb_generate_unique_face_name (new_name, &name_str_len);
+
+  static const uint16_t name_IDs[] = { 1, 2, 3, 4, 6 };
+
+  unsigned int name_table_length = OT::name::min_size +
+                                   ARRAY_LENGTH (name_IDs) * OT::NameRecord::static_size +
+                                   name_str_len * 2; /* for name data in UTF16BE form */
+  unsigned int name_table_offset = (length + 3) & ~3;
+
+  new_length = name_table_offset + ((name_table_length + 3) & ~3);
+  void *new_sfnt_data = calloc (1, new_length);
+  if (!new_sfnt_data)
+  {
+    hb_blob_destroy (blob);
+    return NULL;
+  }
+
+  memcpy(new_sfnt_data, orig_sfnt_data, length);
+
+  OT::name &name = OT::StructAtOffset<OT::name> (new_sfnt_data, name_table_offset);
+  name.format.set (0);
+  name.count.set (ARRAY_LENGTH (name_IDs));
+  name.stringOffset.set (name.get_size ());
+  for (unsigned int i = 0; i < ARRAY_LENGTH (name_IDs); i++)
+  {
+    OT::NameRecord &record = name.nameRecord[i];
+    record.platformID.set (3);
+    record.encodingID.set (1);
+    record.languageID.set (0x0409); /* English */
+    record.nameID.set (name_IDs[i]);
+    record.length.set (name_str_len * 2);
+    record.offset.set (0);
+  }
+
+  /* Copy string data from new_name, converting wchar_t to UTF16BE. */
+  unsigned char *p = &OT::StructAfter<unsigned char> (name);
+  for (unsigned int i = 0; i < name_str_len; i++)
+  {
+    *p++ = new_name[i] >> 8;
+    *p++ = new_name[i] & 0xff;
+  }
+
+  /* Adjust name table entry to point to new name table */
+  const OT::OpenTypeFontFile &file = * (OT::OpenTypeFontFile *) (new_sfnt_data);
+  unsigned int face_count = file.get_face_count ();
+  for (unsigned int face_index = 0; face_index < face_count; face_index++)
+  {
+    /* Note: doing multiple edits (ie. TTC) can be unsafe.  There may be
+     * toe-stepping.  But we don't really care. */
+    const OT::OpenTypeFontFace &face = file.get_face (face_index);
+    unsigned int index;
+    if (face.find_table_index (HB_OT_TAG_name, &index))
+    {
+      OT::TableRecord &record = const_cast<OT::TableRecord &> (face.get_table (index));
+      record.checkSum.set_for_data (&name, name_table_length);
+      record.offset.set (name_table_offset);
+      record.length.set (name_table_length);
+    }
+    else if (face_index == 0) /* Fail if first face doesn't have 'name' table. */
+    {
+      free (new_sfnt_data);
+      hb_blob_destroy (blob);
+      return NULL;
+    }
+  }
+
+  /* The checkSumAdjustment field in the 'head' table is now wrong,
+   * but that doesn't actually seem to cause any problems so we don't
+   * bother. */
+
+  hb_blob_destroy (blob);
+  return hb_blob_create ((const char *) new_sfnt_data, new_length,
+			 HB_MEMORY_MODE_WRITABLE, NULL, free);
+}
 
 hb_uniscribe_shaper_face_data_t *
 _hb_uniscribe_shaper_face_data_create (hb_face_t *face)
@@ -284,15 +409,22 @@ _hb_uniscribe_shaper_face_data_create (hb_face_t *face)
   }
 
   hb_blob_t *blob = hb_face_reference_blob (face);
-  unsigned int blob_length;
-  const char *blob_data = hb_blob_get_data (blob, &blob_length);
-  if (unlikely (!blob_length))
+  if (unlikely (!hb_blob_get_length (blob)))
     DEBUG_MSG (UNISCRIBE, face, "Face has empty blob");
 
+  blob = _hb_rename_font (blob, data->face_name);
+  if (unlikely (!blob))
+  {
+    free (data);
+    return NULL;
+  }
+
   DWORD num_fonts_installed;
-  data->fh = AddFontMemResourceEx ((void *) blob_data, blob_length, 0, &num_fonts_installed);
-  hb_blob_destroy (blob);
-  if (unlikely (!data->fh)) {
+  data->fh = AddFontMemResourceEx ((void *) hb_blob_get_data (blob, NULL),
+				   hb_blob_get_length (blob),
+				   0, &num_fonts_installed);
+  if (unlikely (!data->fh))
+  {
     DEBUG_MSG (UNISCRIBE, face, "Face AddFontMemResourceEx() failed");
     free (data);
     return NULL;
@@ -328,26 +460,10 @@ populate_log_font (LOGFONTW  *lf,
   lf->lfHeight = -font->y_scale;
   lf->lfCharSet = DEFAULT_CHARSET;
 
-  hb_blob_t *blob = OT::Sanitizer<OT::name>::sanitize (hb_face_reference_table (font->face, HB_TAG ('n','a','m','e')));
-  const OT::name *name_table = OT::Sanitizer<OT::name>::lock_instance (blob);
-  unsigned int len = name_table->get_name (3, 1, 0x409, 4,
-					   lf->lfFaceName,
-					   sizeof (lf->lfFaceName[0]) * LF_FACESIZE)
-					  / sizeof (lf->lfFaceName[0]);
-  hb_blob_destroy (blob);
+  hb_face_t *face = font->face;
+  hb_uniscribe_shaper_face_data_t *face_data = HB_SHAPER_DATA_GET (face);
 
-  if (unlikely (!len)) {
-    DEBUG_MSG (UNISCRIBE, NULL, "Didn't find English name table entry");
-    return false;
-  }
-  if (unlikely (len >= LF_FACESIZE)) {
-    DEBUG_MSG (UNISCRIBE, NULL, "Font name too long");
-    return false;
-  }
-
-  for (unsigned int i = 0; i < len; i++)
-    lf->lfFaceName[i] = hb_be_uint16 (lf->lfFaceName[i]);
-  lf->lfFaceName[len] = 0;
+  memcpy (lf->lfFaceName, face_data->face_name, sizeof (lf->lfFaceName));
 
   return true;
 }
@@ -501,7 +617,6 @@ retry:
 
   ALLOCATE_ARRAY (WORD, glyphs, glyphs_size);
   ALLOCATE_ARRAY (SCRIPT_GLYPHPROP, glyph_props, glyphs_size);
-  ALLOCATE_ARRAY (SCRIPT_VISATTR, vis_attr, glyphs_size);
   ALLOCATE_ARRAY (int, advances, glyphs_size);
   ALLOCATE_ARRAY (GOFFSET, offsets, glyphs_size);
   ALLOCATE_ARRAY (uint32_t, vis_clusters, glyphs_size);
