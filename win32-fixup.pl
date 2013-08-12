@@ -4,7 +4,6 @@
 require "../local-paths.lib";
 
 $api_version = "0.9";
-$pango_api_version = "1.0";
 $pango_current_minus_age = 0;
 $harfbuzz_version = "0.9.16";
 $major = 0;
