@@ -53,6 +53,7 @@
 #  include <sys/inttypes.h>
 /* VS 2010 (_MSC_VER 1600) has stdint.h */
 #elif defined (_MSC_VER) && _MSC_VER < 1600
+#ifndef __int8_t_defined /* Added by JE - 14-07-2013 */
 typedef __int8 int8_t;
 typedef unsigned __int8 uint8_t;
 typedef __int16 int16_t;
@@ -61,6 +62,7 @@ typedef __int32 int32_t;
 typedef unsigned __int32 uint32_t;
 typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
+#endif
 #else
 #  include <stdint.h>
 #endif
