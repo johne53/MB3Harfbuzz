@@ -5,16 +5,12 @@ General fixes:
 
 - Return "safe-to-break" bit from shaping.
 
-- Disable 'vert' if 'vrt2' is available (eg. Motoya fonts with arrow chars).
-
 - Implement 'rand' feature.
 
 - mask propagation? (when ligation, "or" the masks).
 
 - Warn at compile time (and runtime with HB_DEBUG?) if no Unicode / font
   funcs found / set.
-
-- Do proper rounding when scaling from font space?  May be a non-issue.
 
 - Misc features:
   * init/medi/fina/isol for non-cursive scripts
@@ -29,11 +25,11 @@ API issues to fix before 1.0:
 
 - hb-ft load_flags issues.
 
-- get_glyph() / get_glyph_variant()?
-
 - Add pkg-config files for glue codes (harfbuzz-glib, etc)
 
 - 'const' for getter APIs? (use mutable internally)
+
+- Remove hb_ot_shape_glyphs_closure()?
 
 
 API additions
