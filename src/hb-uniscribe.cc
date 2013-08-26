@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011,2012  Google, Inc.
+ * Copyright © 2011,2012,2013  Google, Inc.
  *
  *  This is part of HarfBuzz, a text shaping library.
  *
@@ -832,9 +832,8 @@ retry:
   unsigned int glyphs_offset = 0;
   unsigned int glyphs_len;
   bool backward = HB_DIRECTION_IS_BACKWARD (buffer->props.direction);
-  for (unsigned int j = 0; j < item_count; j++)
+  for (unsigned int i = 0; i < item_count; i++)
   {
-    unsigned int i = backward ? item_count - 1 - j : j;
     unsigned int chars_offset = items[i].iCharPos;
     unsigned int item_chars_len = items[i + 1].iCharPos - chars_offset;
 
@@ -874,6 +873,10 @@ retry:
 	last_range = range;
       }
     }
+
+    /* Asking for glyphs in logical order circumvents at least
+     * one bug in Uniscribe. */
+    items[i].a.fLogicalOrder = true;
 
   retry_shape:
     hr = funcs->ScriptShapeOpenType (font_data->hdc,
@@ -940,6 +943,14 @@ retry:
     if (unlikely (FAILED (hr)))
       FAIL ("ScriptPlaceOpenType() failed: 0x%08xL", hr);
 
+    if (DEBUG_ENABLED (UNISCRIBE))
+      fprintf (stderr, "Item %d RTL %d LayoutRTL %d LogicalOrder %d ScriptTag %c%c%c%c\n",
+	       i,
+	       items[i].a.fRTL,
+	       items[i].a.fLayoutRTL,
+	       items[i].a.fLogicalOrder,
+	       HB_UNTAG (hb_uint32_swap (script_tags[i])));
+
     glyphs_offset += glyphs_len;
   }
   glyphs_len = glyphs_offset;
@@ -954,15 +965,9 @@ retry:
     uint32_t *p = &vis_clusters[log_clusters[buffer->info[i].utf16_index()]];
     *p = MIN (*p, buffer->info[i].cluster);
   }
-  if (!backward) {
-    for (unsigned int i = 1; i < glyphs_len; i++)
-      if (vis_clusters[i] == -1)
-	vis_clusters[i] = vis_clusters[i - 1];
-  } else {
-    for (int i = glyphs_len - 2; i >= 0; i--)
-      if (vis_clusters[i] == -1)
-	vis_clusters[i] = vis_clusters[i + 1];
-  }
+  for (unsigned int i = 1; i < glyphs_len; i++)
+    if (vis_clusters[i] == -1)
+      vis_clusters[i] = vis_clusters[i - 1];
 
 #undef utf16_index
 
@@ -996,9 +1001,12 @@ retry:
 
     /* TODO vertical */
     pos->x_advance = info->mask;
-    pos->x_offset = info->var1.u32;
+    pos->x_offset = backward ? -info->var1.u32 : info->var1.u32;
     pos->y_offset = info->var2.u32;
   }
+
+  if (backward)
+    hb_buffer_reverse (buffer);
 
   /* Wow, done! */
   return true;
