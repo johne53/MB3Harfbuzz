@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2008 Nokia Corporation and/or its subsidiary(-ies)
+ * Copyright © 2013  Google, Inc.
  *
- * This is part of HarfBuzz, an OpenType Layout engine library.
+ *  This is part of HarfBuzz, a text shaping library.
  *
  * Permission is hereby granted, without written agreement and without
  * license or royalty fees, to use, copy, modify, and distribute this
@@ -20,18 +20,32 @@
  * FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
  * ON AN "AS IS" BASIS, AND THE COPYRIGHT HOLDER HAS NO OBLIGATION TO
  * PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+ *
+ * Google Author(s): Behdad Esfahbod
  */
 
-#include "harfbuzz-shaper.cpp"
-#include "harfbuzz-indic.cpp"
-extern "C" {
-#include "harfbuzz-greek.c"
-#include "harfbuzz-tibetan.c"
-#include "harfbuzz-khmer.c"
-#include "harfbuzz-hebrew.c"
-#include "harfbuzz-arabic.c"
-#include "harfbuzz-hangul.c"
-#include "harfbuzz-myanmar.c"
-#include "harfbuzz-thai.c"
-}
+#ifndef HB_H_IN
+#error "Include <hb.h> instead."
+#endif
 
+#ifndef HB_DEPRECATED_H
+#define HB_DEPRECATED_H
+
+#include "hb-common.h"
+#include "hb-unicode.h"
+#include "hb-font.h"
+
+HB_BEGIN_DECLS
+
+#ifndef HB_DISABLE_DEPRECATED
+
+#define HB_SCRIPT_CANADIAN_ABORIGINAL		HB_SCRIPT_CANADIAN_SYLLABICS
+
+#define HB_BUFFER_FLAGS_DEFAULT			HB_BUFFER_FLAG_DEFAULT
+#define HB_BUFFER_SERIALIZE_FLAGS_DEFAULT	HB_BUFFER_SERIALIZE_FLAG_DEFAULT
+
+#endif
+
+HB_END_DECLS
+
+#endif /* HB_DEPRECATED_H */
