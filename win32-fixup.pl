@@ -12,6 +12,7 @@ $micro = 23;
 $binary_age = 923;
 $interface_age = 23;
 $current_minus_age = 0;
+$exec_prefix = "lib";
 
 sub process_file
 {
@@ -22,6 +23,7 @@ sub process_file
 	open (OUTPUT, "> $outfilename") || exit 1;
 	
 	while (<INPUT>) {
+	    s/\@VERSION@/$harfbuzz_version/g;
 	    s/\@PANGO_API_VERSION@/$pango_api_version/g;
 	    s/\@HARFBUZZ_API_VERSION@/$api_version/g;
 	    s/\@HB_VERSION@/$harfbuzz_version/g;
@@ -44,11 +46,16 @@ sub process_file
 	    s/\@Debug32TargetFolder@/$debug32_target_folder/g;
 	    s/\@Release32TargetFolder@/$release32_target_folder/g;
 	    s/\@TargetSxSFolder@/$target_sxs_folder/g;
+	    s/\@prefix@/$prefix/g;
+	    s/\@exec_prefix@/$exec_prefix/g;
+	    s/\@includedir@/$generic_include_folder/g;
+	    s/\@libdir@/$generic_library_folder/g;
 	    print OUTPUT;
 	}
 }
 
 process_file ("src/hb-version.h");
+process_file ("src/harfbuzz.pc");
 
 my $command=join(' ',@ARGV);
 if ($command eq -buildall) {
