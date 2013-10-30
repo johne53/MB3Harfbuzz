@@ -21,6 +21,9 @@ EXTRA_DIST += \
 	hb-unicode-encode \
 	hb-unicode-prettyname \
 	run-tests.sh \
+	texts/in-tree \
+	fonts/sha1sum \
+	$(TESTS) \
 	$(NULL)
 
 # TODO Figure out Python stuff
@@ -31,8 +34,9 @@ CLEANFILES += \
 	hb_test_tools.py[co] \
 	$(NULL)
 
-TESTS = $(srcdir)/tests/*.tests
+TESTS = tests/context-matching.tests
 TESTS_ENVIRONMENT = \
+	EXEEXT="$(EXEEXT)" \
 	srcdir="$(srcdir)" \
 	builddir="$(builddir)" \
 	$(srcdir)/run-tests.sh \
