@@ -241,7 +241,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy /Y &quot;..\src\*.h&quot; &quot;$(GenericIncludeFolder)\harfbuzz&quot;&#x0D;&#x0A;copy /Y &quot;..\src\harfbuzz.pc&quot; &quot;$(GenericLibraryFolder)\pkgconfig&quot;"
+				CommandLine="copy /Y &quot;..\src\*.h&quot; &quot;$(GenericIncludeFolder)\harfbuzz&quot;&#x0D;&#x0A;copy /Y &quot;..\src\harfbuzz.pc&quot; &quot;$(GenericLibraryFolder)\pkgconfig&quot;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -328,6 +328,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\hb-ot-shape-complex-hangul.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\hb-ot-shape-complex-hebrew.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\hb-ot-shape-complex-indic-table.cc"
 				>
 			</File>
@@ -345,6 +353,10 @@
 			</File>
 			<File
 				RelativePath="..\src\hb-ot-shape-complex-thai.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\hb-ot-shape-complex-tibetan.cc"
 				>
 			</File>
 			<File
@@ -426,6 +438,10 @@
 			</File>
 			<File
 				RelativePath="..\src\hb-ot-layout.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\hb-ot-shape.h"
 				>
 			</File>
 			<File
