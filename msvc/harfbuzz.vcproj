@@ -241,7 +241,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy /Y &quot;..\src\*.h&quot; &quot;$(GenericIncludeFolder)\harfbuzz&quot;&#x0D;&#x0A;copy /Y &quot;..\src\harfbuzz.pc&quot; &quot;$(GenericLibraryFolder)\pkgconfig&quot;&#x0D;&#x0A;"
+				CommandLine="mkdir &quot;$(GenericLibraryFolder)\pkgconfig&quot; 2&gt; NUL&#x0D;&#x0A;mkdir &quot;$(GenericIncludeFolder)\harfbuzz&quot; 2&gt; NUL&#x0D;&#x0A;copy /Y &quot;..\src\*.h&quot; &quot;$(GenericIncludeFolder)\harfbuzz&quot;&#x0D;&#x0A;copy /Y &quot;..\src\harfbuzz.pc&quot; &quot;$(GenericLibraryFolder)\pkgconfig&quot;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
