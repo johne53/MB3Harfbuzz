@@ -312,6 +312,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\hb-ot-font.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\hb-ot-layout.cc"
 				>
 			</File>
@@ -434,6 +438,10 @@
 			</File>
 			<File
 				RelativePath="..\src\hb-icu.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\hb-ot-font.h"
 				>
 			</File>
 			<File
