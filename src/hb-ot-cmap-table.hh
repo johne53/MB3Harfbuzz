@@ -131,11 +131,25 @@ struct CmapSubtableFormat4
     return true;
   }
 
-  inline bool sanitize (hb_sanitize_context_t *c) {
+  inline bool sanitize (hb_sanitize_context_t *c)
+  {
     TRACE_SANITIZE (this);
-    return TRACE_RETURN (c->check_struct (this) &&
-			 c->check_range (this, length) &&
-			 16 + 4 * (unsigned int) segCountX2 < length);
+    if (unlikely (!c->check_struct (this)))
+      return TRACE_RETURN (false);
+
+    if (unlikely (!c->check_range (this, length)))
+    {
+      /* Some broken fonts have too long of a "length" value.
+       * If that is the case, just change the value to truncate
+       * the subtable at the end of the blob. */
+      uint16_t new_length = (uint16_t) MIN ((uintptr_t) 65535,
+					    (uintptr_t) (c->end -
+							 (char *) this));
+      if (!c->try_set (&length, new_length))
+	return TRACE_RETURN (false);
+    }
+
+    return TRACE_RETURN (16 + 4 * (unsigned int) segCountX2 <= length);
   }
 
   protected:
@@ -250,7 +264,7 @@ struct CmapSubtableLongSegmented
   USHORT	reserved;	/* Reserved; set to 0. */
   ULONG		length;		/* Byte length of this subtable. */
   ULONG		language;	/* Ignore. */
-  LongArrayOf<CmapSubtableLongGroup>
+  LongSortedArrayOf<CmapSubtableLongGroup>
 		groups;		/* Groupings. */
   public:
   DEFINE_SIZE_ARRAY (16, groups);
@@ -318,12 +332,12 @@ struct CmapSubtable
 
 struct EncodingRecord
 {
-  int cmp (const EncodingRecord &other) const
+  inline int cmp (const EncodingRecord &other) const
   {
     int ret;
-    ret = other.platformID.cmp (platformID);
+    ret = platformID.cmp (other.platformID);
     if (ret) return ret;
-    ret = other.encodingID.cmp (encodingID);
+    ret = encodingID.cmp (other.encodingID);
     if (ret) return ret;
     return 0;
   }
@@ -354,7 +368,7 @@ struct cmap
     key.encodingID.set (encoding_id);
 
     int result = encodingRecord.search (key);
-    if (result == -1)
+    if (result == -1 || !encodingRecord[result].subtable)
       return NULL;
 
     return &(this+encodingRecord[result].subtable);
@@ -367,8 +381,12 @@ struct cmap
 			 encodingRecord.sanitize (c, this));
   }
 
-  USHORT			version;	/* Table version number (0). */
-  ArrayOf<EncodingRecord>	encodingRecord;	/* Encoding tables. */
+  USHORT		version;	/* Table version number (0). */
+  /* Note: We can use the Sorted array variant, but since it
+   * has no performance implications, we use non-sorted array and
+   * as such accept fonts with unsorted subtable list. */
+  /*Sorted*/ArrayOf<EncodingRecord>
+			encodingRecord;	/* Encoding tables. */
   public:
   DEFINE_SIZE_ARRAY (4, encodingRecord);
 };
