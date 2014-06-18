@@ -1336,6 +1336,27 @@ final_reordering_syllable (const hb_ot_shape_plan_t *plan,
   const indic_shape_plan_t *indic_plan = (const indic_shape_plan_t *) plan->data;
   hb_glyph_info_t *info = buffer->info;
 
+
+  /* This function relies heavily on halant glyphs.  Lots of ligation
+   * and possibly multiplication substitutions happened prior to this
+   * phase, and that might have messed up our properties.  Recover
+   * from a particular case of that where we're fairly sure that a
+   * class of OT_H is desired but has been lost. */
+  if (indic_plan->virama_glyph)
+  {
+    unsigned int virama_glyph = indic_plan->virama_glyph;
+    for (unsigned int i = start; i < end; i++)
+      if (info[i].codepoint == virama_glyph &&
+	  _hb_glyph_info_ligated (&info[i]) &&
+	  _hb_glyph_info_multiplied (&info[i]))
+      {
+        /* This will make sure that this glyph passes is_halant_or_coeng() test. */
+	info[i].indic_category() = OT_H;
+	_hb_glyph_info_clear_ligated_and_multiplied (&info[i]);
+      }
+  }
+
+
   /* 4. Final reordering:
    *
    * After the localized forms and basic shaping forms GSUB features have been
@@ -1344,20 +1365,43 @@ final_reordering_syllable (const hb_ot_shape_plan_t *plan,
    * cluster.
    */
 
+  bool try_pref = !!indic_plan->mask_array[PREF];
+
   /* Find base again */
   unsigned int base;
   for (base = start; base < end; base++)
-    if (info[base].indic_position() >= POS_BASE_C) {
+    if (info[base].indic_position() >= POS_BASE_C)
+    {
+      if (try_pref && base + 1 < end && indic_plan->config->pref_len == 2)
+      {
+	for (unsigned int i = base + 1; i < end; i++)
+	  if ((info[i].mask & indic_plan->mask_array[PREF]) != 0)
+	  {
+	    if (!(_hb_glyph_info_substituted (&info[i]) &&
+		  _hb_glyph_info_ligated_and_didnt_multiply (&info[i])))
+	    {
+	      /* Ok, this was a 'pref' candidate but didn't form any.
+	       * Base is around here... */
+	      base = i;
+	      while (base < end && is_halant_or_coeng (info[base]))
+		base++;
+	      info[base].indic_position() = POS_BASE_C;
+
+	      try_pref = false;
+	    }
+	    break;
+	  }
+      }
+
       if (start < base && info[base].indic_position() > POS_BASE_C)
         base--;
       break;
     }
   if (base == end && start < base &&
-      info[base - 1].indic_category() != OT_ZWJ)
+      is_one_of (info[base - 1], FLAG (OT_ZWJ)))
     base--;
   while (start < base &&
-	 (info[base].indic_category() == OT_H ||
-	  info[base].indic_category() == OT_N))
+	 is_one_of (info[base], (FLAG (OT_N) | HALANT_OR_COENG_FLAGS)))
     base--;
 
 
@@ -1383,7 +1427,7 @@ final_reordering_syllable (const hb_ot_shape_plan_t *plan,
     if (buffer->props.script != HB_SCRIPT_MALAYALAM && buffer->props.script != HB_SCRIPT_TAMIL)
     {
       while (new_pos > start &&
-	     !(is_one_of (info[new_pos], (FLAG (OT_M) | FLAG (OT_H) | FLAG (OT_Coeng)))))
+	     !(is_one_of (info[new_pos], (FLAG (OT_M) | HALANT_OR_COENG_FLAGS))))
 	new_pos--;
 
       /* If we found no Halant we are done.
@@ -1446,7 +1490,7 @@ final_reordering_syllable (const hb_ot_shape_plan_t *plan,
   if (start + 1 < end &&
       info[start].indic_position() == POS_RA_TO_BECOME_REPH &&
       ((info[start].indic_category() == OT_Repha) ^
-       _hb_glyph_info_ligated (&info[start])))
+       _hb_glyph_info_ligated_and_didnt_multiply (&info[start])))
   {
     unsigned int new_reph_pos;
     reph_position_t reph_pos = indic_plan->config->reph_pos;
@@ -1583,7 +1627,7 @@ final_reordering_syllable (const hb_ot_shape_plan_t *plan,
    *     the following rules:
    */
 
-  if (indic_plan->mask_array[PREF] && base + 1 < end) /* Otherwise there can't be any pre-base reordering Ra. */
+  if (try_pref && base + 1 < end) /* Otherwise there can't be any pre-base reordering Ra. */
   {
     unsigned int pref_len = indic_plan->config->pref_len;
     for (unsigned int i = base + 1; i < end; i++)
@@ -1599,7 +1643,7 @@ final_reordering_syllable (const hb_ot_shape_plan_t *plan,
 	 * If pref len is longer than one, then only reorder if it ligated.  If
 	 * pref len is one, only reorder if it didn't ligate with other things. */
 	if (_hb_glyph_info_substituted (&info[i]) &&
-	    ((pref_len == 1) ^ _hb_glyph_info_ligated (&info[i])))
+	    ((pref_len == 1) ^ _hb_glyph_info_ligated_and_didnt_multiply (&info[i])))
 	{
 	  /*
 	   *       2. Try to find a target position the same way as for pre-base matra.

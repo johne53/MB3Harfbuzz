@@ -50,9 +50,11 @@ typedef enum
   /* The following are used internally; not derived from GDEF. */
   HB_OT_LAYOUT_GLYPH_PROPS_SUBSTITUTED	= 0x10u,
   HB_OT_LAYOUT_GLYPH_PROPS_LIGATED	= 0x20u,
+  HB_OT_LAYOUT_GLYPH_PROPS_MULTIPLIED	= 0x40u,
 
   HB_OT_LAYOUT_GLYPH_PROPS_PRESERVE     = HB_OT_LAYOUT_GLYPH_PROPS_SUBSTITUTED |
-					  HB_OT_LAYOUT_GLYPH_PROPS_LIGATED
+					  HB_OT_LAYOUT_GLYPH_PROPS_LIGATED |
+					  HB_OT_LAYOUT_GLYPH_PROPS_MULTIPLIED
 } hb_ot_layout_glyph_class_mask_t;
 
 
@@ -380,6 +382,26 @@ _hb_glyph_info_ligated (const hb_glyph_info_t *info)
 {
   return !!(info->glyph_props() & HB_OT_LAYOUT_GLYPH_PROPS_LIGATED);
 }
+
+static inline bool
+_hb_glyph_info_multiplied (const hb_glyph_info_t *info)
+{
+  return !!(info->glyph_props() & HB_OT_LAYOUT_GLYPH_PROPS_MULTIPLIED);
+}
+
+static inline bool
+_hb_glyph_info_ligated_and_didnt_multiply (const hb_glyph_info_t *info)
+{
+  return _hb_glyph_info_ligated (info) && !_hb_glyph_info_multiplied (info);
+}
+
+static inline void
+_hb_glyph_info_clear_ligated_and_multiplied (hb_glyph_info_t *info)
+{
+  info->glyph_props() &= ~(HB_OT_LAYOUT_GLYPH_PROPS_LIGATED |
+			   HB_OT_LAYOUT_GLYPH_PROPS_MULTIPLIED);
+}
+
 
 /* Allocation / deallocation. */
 
