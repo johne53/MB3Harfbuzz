@@ -103,7 +103,8 @@ struct RecordArrayOf : SortedArrayOf<Record<Type> > {
   }
   inline bool find_index (hb_tag_t tag, unsigned int *index) const
   {
-    int i = this->search (tag);
+    /* If we want to allow non-sorted data, we can lsearch(). */
+    int i = this->/*lsearch*/bsearch (tag);
     if (i != -1) {
         if (index) *index = i;
         return true;
@@ -203,7 +204,7 @@ struct LangSys
     return TRACE_RETURN (c->check_struct (this) && featureIndex.sanitize (c));
   }
 
-  Offset	lookupOrder;	/* = Null (reserved for an offset to a
+  Offset<>	lookupOrderZ;	/* = Null (reserved for an offset to a
 				 * reordering table) */
   USHORT	reqFeatureIndex;/* Index of a feature required for this
 				 * language system--if no required features
@@ -501,11 +502,11 @@ struct Feature
      * Adobe tools, only the 'size' feature had FeatureParams defined.
      */
 
-    Offset orig_offset = featureParams;
+    OffsetTo<FeatureParams> orig_offset = featureParams;
     if (unlikely (!featureParams.sanitize (c, this, closure ? closure->tag : HB_TAG_NONE)))
       return TRACE_RETURN (false);
 
-    if (likely (!orig_offset))
+    if (likely (orig_offset.is_null ()))
       return TRACE_RETURN (true);
 
     if (featureParams == 0 && closure &&
@@ -515,7 +516,7 @@ struct Feature
       unsigned int new_offset_int = (unsigned int) orig_offset -
 				    (((char *) this) - ((char *) closure->list_base));
 
-      Offset new_offset;
+      OffsetTo<FeatureParams> new_offset;
       /* Check that it did not overflow. */
       new_offset.set (new_offset_int);
       if (new_offset == new_offset_int &&
@@ -608,7 +609,7 @@ struct Lookup
 
   USHORT	lookupType;		/* Different enumerations for GSUB and GPOS */
   USHORT	lookupFlag;		/* Lookup qualifiers */
-  ArrayOf<Offset>
+  ArrayOf<Offset<> >
 		subTable;		/* Array of SubTables */
   USHORT	markFilteringSetX[VAR];	/* Index (base 0) into GDEF mark glyph sets
 					 * structure. This field is only present if bit
@@ -631,7 +632,7 @@ struct CoverageFormat1
   private:
   inline unsigned int get_coverage (hb_codepoint_t glyph_id) const
   {
-    int i = glyphArray.search (glyph_id);
+    int i = glyphArray.bsearch (glyph_id);
     ASSERT_STATIC (((unsigned int) -1) == NOT_COVERED);
     return i;
   }
@@ -696,7 +697,7 @@ struct CoverageFormat2
   private:
   inline unsigned int get_coverage (hb_codepoint_t glyph_id) const
   {
-    int i = rangeRecord.search (glyph_id);
+    int i = rangeRecord.bsearch (glyph_id);
     if (i != -1) {
       const RangeRecord &range = rangeRecord[i];
       return (unsigned int) range.value + (glyph_id - range.start);
@@ -992,7 +993,7 @@ struct ClassDefFormat2
   private:
   inline unsigned int get_class (hb_codepoint_t glyph_id) const
   {
-    int i = rangeRecord.search (glyph_id);
+    int i = rangeRecord.bsearch (glyph_id);
     if (i != -1)
       return rangeRecord[i].value;
     return 0;

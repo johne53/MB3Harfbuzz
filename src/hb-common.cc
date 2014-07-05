@@ -484,6 +484,14 @@ hb_script_get_horizontal_direction (hb_script_t script)
     case HB_SCRIPT_MEROITIC_CURSIVE:
     case HB_SCRIPT_MEROITIC_HIEROGLYPHS:
 
+    /* Unicode-7.0 additions */
+    case HB_SCRIPT_MANICHAEAN:
+    case HB_SCRIPT_MENDE_KIKAKUI:
+    case HB_SCRIPT_NABATAEAN:
+    case HB_SCRIPT_OLD_NORTH_ARABIAN:
+    case HB_SCRIPT_PALMYRENE:
+    case HB_SCRIPT_PSALTER_PAHLAVI:
+
       return HB_DIRECTION_RTL;
   }
 
@@ -561,7 +569,7 @@ hb_version_string (void)
 }
 
 /**
- * hb_version_check:
+ * hb_version_atleast:
  * @major: 
  * @minor: 
  * @micro: 
@@ -573,9 +581,9 @@ hb_version_string (void)
  * Since: 1.0
  **/
 hb_bool_t
-hb_version_check (unsigned int major,
-		  unsigned int minor,
-		  unsigned int micro)
+hb_version_atleast (unsigned int major,
+		    unsigned int minor,
+		    unsigned int micro)
 {
-  return HB_VERSION_CHECK (major, minor, micro);
+  return HB_VERSION_ATLEAST (major, minor, micro);
 }

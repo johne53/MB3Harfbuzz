@@ -57,41 +57,15 @@ enum {
 
 static unsigned int get_joining_type (hb_codepoint_t u, hb_unicode_general_category_t gen_cat)
 {
-  if (likely (hb_in_range<hb_codepoint_t> (u, JOINING_TABLE_FIRST, JOINING_TABLE_LAST))) {
-    unsigned int j_type = joining_table[u - JOINING_TABLE_FIRST];
-    if (likely (j_type != JOINING_TYPE_X))
-      return j_type;
-  }
+  unsigned int j_type = joining_type(u);
+  if (likely (j_type != JOINING_TYPE_X))
+    return j_type;
 
-  /* Mongolian joining data is not in ArabicJoining.txt yet. */
-  if (unlikely (hb_in_range<hb_codepoint_t> (u, 0x1800, 0x18AF)))
-  {
-    if (unlikely (hb_in_range<hb_codepoint_t> (u, 0x1880, 0x1886)))
-      return JOINING_TYPE_U;
-
-    /* All letters, SIBE SYLLABLE BOUNDARY MARKER, and NIRUGU are D */
-    if ((FLAG(gen_cat) & (FLAG (HB_UNICODE_GENERAL_CATEGORY_OTHER_LETTER) |
-			  FLAG (HB_UNICODE_GENERAL_CATEGORY_MODIFIER_LETTER)))
-	|| u == 0x1807 || u == 0x180A)
-      return JOINING_TYPE_D;
-  }
-
-  /* 'Phags-pa joining data is not in ArabicJoining.txt yet. */
-  if (unlikely (hb_in_range<hb_codepoint_t> (u, 0xA840, 0xA872)))
-  {
-      if (unlikely (u == 0xA872))
-	return JOINING_TYPE_L;
-
-      return JOINING_TYPE_D;
-  }
-
-  if (unlikely (hb_in_range<hb_codepoint_t> (u, 0x200C, 0x200D)))
-  {
-    return u == 0x200C ? JOINING_TYPE_U : JOINING_TYPE_C;
-  }
-
-  return (FLAG(gen_cat) & (FLAG(HB_UNICODE_GENERAL_CATEGORY_NON_SPACING_MARK) | FLAG(HB_UNICODE_GENERAL_CATEGORY_ENCLOSING_MARK) | FLAG(HB_UNICODE_GENERAL_CATEGORY_FORMAT))) ?
-	 JOINING_TYPE_T : JOINING_TYPE_U;
+  return (FLAG(gen_cat) &
+	  (FLAG(HB_UNICODE_GENERAL_CATEGORY_NON_SPACING_MARK) |
+	   FLAG(HB_UNICODE_GENERAL_CATEGORY_ENCLOSING_MARK) |
+	   FLAG(HB_UNICODE_GENERAL_CATEGORY_FORMAT))
+	 ) ?  JOINING_TYPE_T : JOINING_TYPE_U;
 }
 
 static const hb_tag_t arabic_features[] =

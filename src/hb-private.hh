@@ -272,7 +272,7 @@ typedef int (*hb_compare_func_t) (const void *, const void *);
 
 
 #define HB_PREALLOCED_ARRAY_INIT {0}
-template <typename Type, unsigned int StaticSize>
+template <typename Type, unsigned int StaticSize=16>
 struct hb_prealloced_array_t
 {
   unsigned int len;
@@ -353,14 +353,14 @@ struct hb_prealloced_array_t
     return NULL;
   }
 
-  inline void sort (void)
+  inline void qsort (void)
   {
-    qsort (array, len, sizeof (Type), (hb_compare_func_t) Type::cmp);
+    ::qsort (array, len, sizeof (Type), (hb_compare_func_t) Type::cmp);
   }
 
-  inline void sort (unsigned int start, unsigned int end)
+  inline void qsort (unsigned int start, unsigned int end)
   {
-    qsort (array + start, end - start, sizeof (Type), (hb_compare_func_t) Type::cmp);
+    ::qsort (array + start, end - start, sizeof (Type), (hb_compare_func_t) Type::cmp);
   }
 
   template <typename T>
@@ -383,12 +383,11 @@ struct hb_prealloced_array_t
   }
 };
 
-#define HB_AUTO_ARRAY_PREALLOCED 16
 template <typename Type>
-struct hb_auto_array_t : hb_prealloced_array_t <Type, HB_AUTO_ARRAY_PREALLOCED>
+struct hb_auto_array_t : hb_prealloced_array_t <Type>
 {
-  hb_auto_array_t (void) { hb_prealloced_array_t<Type, HB_AUTO_ARRAY_PREALLOCED>::init (); }
-  ~hb_auto_array_t (void) { hb_prealloced_array_t<Type, HB_AUTO_ARRAY_PREALLOCED>::finish (); }
+  hb_auto_array_t (void) { hb_prealloced_array_t<Type>::init (); }
+  ~hb_auto_array_t (void) { hb_prealloced_array_t<Type>::finish (); }
 };
 
 
