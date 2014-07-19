@@ -786,20 +786,23 @@ struct hb_auto_trace_t<0, ret_t> {
 
 /* Misc */
 
+template <typename T> class hb_assert_unsigned_t;
+template <> class hb_assert_unsigned_t<unsigned char> {};
+template <> class hb_assert_unsigned_t<unsigned short> {};
+template <> class hb_assert_unsigned_t<unsigned int> {};
+template <> class hb_assert_unsigned_t<unsigned long> {};
 
-/* Pre-mature optimization:
- * Checks for lo <= u <= hi but with an optimization if lo and hi
- * are only different in a contiguous set of lower-most bits.
- */
 template <typename T> static inline bool
 hb_in_range (T u, T lo, T hi)
 {
-  if ( ((lo^hi) & lo) == 0 &&
-       ((lo^hi) & hi) == (lo^hi) &&
-       ((lo^hi) & ((lo^hi) + 1)) == 0 )
-    return (u & ~(lo^hi)) == lo;
-  else
-    return lo <= u && u <= hi;
+  /* The sizeof() is here to force template instantiation.
+   * I'm sure there are better ways to do this but can't think of
+   * one right now.  Declaring a variable won't work as HB_UNUSED
+   * is unsable on some platforms and unused types are less likely
+   * to generate a warning than unused variables. */
+  ASSERT_STATIC (sizeof (hb_assert_unsigned_t<T>) >= 0);
+
+  return (u - lo) <= (hi - lo);
 }
 
 template <typename T> static inline bool
