@@ -99,6 +99,9 @@ hb_ft_get_glyph_h_advance (hb_font_t *font HB_UNUSED,
   if (unlikely (FT_Get_Advance (ft_face, glyph, load_flags, &v)))
     return 0;
 
+  if (font->x_scale < 0)
+    v = -v;
+
   return (v + (1<<9)) >> 10;
 }
 
@@ -114,6 +117,9 @@ hb_ft_get_glyph_v_advance (hb_font_t *font HB_UNUSED,
 
   if (unlikely (FT_Get_Advance (ft_face, glyph, load_flags, &v)))
     return 0;
+
+  if (font->y_scale < 0)
+    v = -v;
 
   /* Note: FreeType's vertical metrics grows downward while other FreeType coordinates
    * have a Y growing upward.  Hence the extra negation. */
@@ -150,6 +156,11 @@ hb_ft_get_glyph_v_origin (hb_font_t *font HB_UNUSED,
    * have a Y growing upward.  Hence the extra negation. */
   *x = ft_face->glyph->metrics.horiBearingX -   ft_face->glyph->metrics.vertBearingX;
   *y = ft_face->glyph->metrics.horiBearingY - (-ft_face->glyph->metrics.vertBearingY);
+
+  if (font->x_scale < 0)
+    *x = -*x;
+  if (font->y_scale < 0)
+    *y = -*y;
 
   return true;
 }
@@ -530,14 +541,19 @@ hb_ft_font_set_funcs (hb_font_t *font)
 
   FT_Select_Charmap (ft_face, FT_ENCODING_UNICODE);
 
-  assert (font->y_scale >= 0);
   FT_Set_Char_Size (ft_face,
-		    font->x_scale, font->y_scale,
+		    abs (font->x_scale), abs (font->y_scale),
 		    0, 0);
 #if 0
 		    font->x_ppem * 72 * 64 / font->x_scale,
 		    font->y_ppem * 72 * 64 / font->y_scale);
 #endif
+  if (font->x_scale < 0 || font->y_scale < 0)
+  {
+    FT_Matrix matrix = { font->x_scale < 0 ? -1 : +1, 0,
+			  0, font->y_scale < 0 ? -1 : +1};
+    FT_Set_Transform (ft_face, &matrix, NULL);
+  }
 
   ft_face->generic.data = blob;
   ft_face->generic.finalizer = (FT_Generic_Finalizer) _release_blob;
