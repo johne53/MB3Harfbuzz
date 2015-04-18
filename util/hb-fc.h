@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012  Google, Inc.
+ * Copyright © 2014  Google, Inc.
  *
  *  This is part of HarfBuzz, a text shaping library.
  *
@@ -24,26 +24,23 @@
  * Google Author(s): Behdad Esfahbod
  */
 
-#include "hb-atomic-private.hh"
-#include "hb-mutex-private.hh"
+#ifndef HB_FC_H
+#define HB_FC_H
+
+#include "hb.h"
+
+#include <fontconfig/fontconfig.h>
+
+HB_BEGIN_DECLS
 
 
-#if defined(HB_ATOMIC_INT_NIL)
-#ifdef _MSC_VER
-#pragma error("Could not find any system to define atomic_int macros, library WILL NOT be thread-safe")
-#pragma error("Check hb-atomic-private.hh for possible resolutions.")
-#else
-#error "Could not find any system to define atomic_int macros, library WILL NOT be thread-safe"
-#error "Check hb-atomic-private.hh for possible resolutions."
-#endif
-#endif
+hb_font_t *
+hb_fc_font_create (FcPattern *font);
 
-#if defined(HB_MUTEX_IMPL_NIL)
-#ifdef _MSC_VER
-#pragma error("Could not find any system to define mutex macros, library WILL NOT be thread-safe")
-#pragma error("Check hb-mutex-private.hh for possible resolutions.")
-#else
-#error "Could not find any system to define mutex macros, library WILL NOT be thread-safe"
-#error "Check hb-mutex-private.hh for possible resolutions."
-#endif
-#endif
+hb_bool_t
+hb_fc_can_render (hb_font_t *font, const char *text);
+
+
+HB_END_DECLS
+
+#endif /* HB_FC_H */
