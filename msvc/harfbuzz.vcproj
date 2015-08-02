@@ -179,7 +179,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Copy all &apos;machine.hh&apos; file(s)"
-				CommandLine="copy /Y &quot;..\src\hb-ot-shape-complex-indic-machine.hh.win32-msvc&quot; &quot;..\src\hb-ot-shape-complex-indic-machine.hh&quot;&#x0D;&#x0A;copy /Y &quot;..\src\hb-ot-shape-complex-myanmar-machine.hh.win32-msvc&quot; &quot;..\src\hb-ot-shape-complex-myanmar-machine.hh&quot;&#x0D;&#x0A;copy /Y &quot;..\src\hb-ot-shape-complex-sea-machine.hh.win32-msvc&quot; &quot;..\src\hb-ot-shape-complex-sea-machine.hh&quot;&#x0D;&#x0A;"
+				CommandLine="copy /Y &quot;..\src\hb-ot-shape-complex-indic-machine.hh.win32-msvc&quot; &quot;..\src\hb-ot-shape-complex-indic-machine.hh&quot;&#x0D;&#x0A;copy /Y &quot;..\src\hb-ot-shape-complex-myanmar-machine.hh.win32-msvc&quot; &quot;..\src\hb-ot-shape-complex-myanmar-machine.hh&quot;&#x0D;&#x0A;copy /Y &quot;..\src\hb-ot-shape-complex-use-machine.hh.win32-msvc&quot; &quot;..\src\hb-ot-shape-complex-use-machine.hh&quot;&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -352,15 +352,19 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\hb-ot-shape-complex-sea.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\hb-ot-shape-complex-thai.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\hb-ot-shape-complex-tibetan.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\hb-ot-shape-complex-use-table.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\hb-ot-shape-complex-use.cc"
 				>
 			</File>
 			<File
