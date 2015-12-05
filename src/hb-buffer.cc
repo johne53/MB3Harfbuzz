@@ -37,6 +37,8 @@
 
 
 /**
+ * hb_segment_properties_equal:
+ *
  * Since: 0.9.7
  **/
 hb_bool_t
@@ -52,6 +54,8 @@ hb_segment_properties_equal (const hb_segment_properties_t *a,
 }
 
 /**
+ * hb_segment_properties_hash:
+ *
  * Since: 0.9.7
  **/
 unsigned int
@@ -91,6 +95,11 @@ hb_buffer_t::enlarge (unsigned int size)
 {
   if (unlikely (in_error))
     return false;
+  if (unlikely (size > max_len))
+  {
+    in_error = true;
+    return false;
+  }
 
   unsigned int new_allocated = allocated;
   hb_glyph_position_t *new_pos = NULL;
@@ -198,6 +207,7 @@ hb_buffer_t::clear (void)
 
   hb_segment_properties_t default_props = HB_SEGMENT_PROPERTIES_DEFAULT;
   props = default_props;
+  scratch_flags = HB_BUFFER_SCRATCH_FLAG_DEFAULT;
 
   content_type = HB_BUFFER_CONTENT_TYPE_INVALID;
   in_error = false;
@@ -714,6 +724,8 @@ hb_buffer_create (void)
   if (!(buffer = hb_object_create<hb_buffer_t> ()))
     return hb_buffer_get_empty ();
 
+  buffer->max_len = HB_BUFFER_MAX_LEN_DEFAULT;
+
   buffer->reset ();
 
   return buffer;
@@ -738,6 +750,8 @@ hb_buffer_get_empty (void)
     HB_BUFFER_FLAG_DEFAULT,
     HB_BUFFER_CLUSTER_LEVEL_DEFAULT,
     HB_BUFFER_REPLACEMENT_CODEPOINT_DEFAULT,
+    HB_BUFFER_SCRATCH_FLAG_DEFAULT,
+    HB_BUFFER_MAX_LEN_DEFAULT,
 
     HB_BUFFER_CONTENT_TYPE_INVALID,
     HB_SEGMENT_PROPERTIES_DEFAULT,
