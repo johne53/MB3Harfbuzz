@@ -145,7 +145,7 @@ _hb_ot_shaper_face_data_destroy (hb_ot_shaper_face_data_t *data)
 struct hb_ot_shaper_font_data_t {};
 
 hb_ot_shaper_font_data_t *
-_hb_ot_shaper_font_data_create (hb_font_t *font)
+_hb_ot_shaper_font_data_create (hb_font_t *font HB_UNUSED)
 {
   return (hb_ot_shaper_font_data_t *) HB_SHAPER_DATA_SUCCEEDED;
 }
@@ -267,13 +267,14 @@ hb_form_clusters (hb_buffer_t *buffer)
       buffer->cluster_level != HB_BUFFER_CLUSTER_LEVEL_MONOTONE_GRAPHEMES)
     return;
 
-  /* Loop duplicated in hb_ensure_native_direction(). */
+  /* Loop duplicated in hb_ensure_native_direction(), and in _hb-coretext.cc */
   unsigned int base = 0;
   unsigned int count = buffer->len;
   hb_glyph_info_t *info = buffer->info;
   for (unsigned int i = 1; i < count; i++)
   {
-    if (likely (!HB_UNICODE_GENERAL_CATEGORY_IS_MARK (_hb_glyph_info_get_general_category (&info[i]))))
+    if (likely (!HB_UNICODE_GENERAL_CATEGORY_IS_MARK (_hb_glyph_info_get_general_category (&info[i])) &&
+		!_hb_glyph_info_is_joiner (&info[i])))
     {
       buffer->merge_clusters (base, i);
       base = i;
@@ -455,7 +456,7 @@ hb_ot_hide_default_ignorables (hb_ot_shape_context_t *c)
     return;
 
   hb_codepoint_t space;
-  if (c->font->get_glyph (' ', 0, &space))
+  if (c->font->get_nominal_glyph (' ', &space))
   {
     /* Replace default-ignorables with a zero-advance space glyph. */
     for (/*continue*/; i < count; i++)
@@ -847,12 +848,12 @@ add_char (hb_font_t          *font,
 	  hb_set_t           *glyphs)
 {
   hb_codepoint_t glyph;
-  if (font->get_glyph (u, 0, &glyph))
+  if (font->get_nominal_glyph (u, &glyph))
     glyphs->add (glyph);
   if (mirror)
   {
     hb_codepoint_t m = unicode->mirroring (u);
-    if (m != u && font->get_glyph (m, 0, &glyph))
+    if (m != u && font->get_nominal_glyph (m, &glyph))
       glyphs->add (glyph);
   }
 }
