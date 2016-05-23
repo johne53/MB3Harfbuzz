@@ -5,12 +5,11 @@ require "../local-paths.lib";
 
 $api_version = "1.0";
 $pango_current_minus_age = 0;
-$harfbuzz_version = "1.2.07";
+$harfbuzz_version = "1.2.08";
 $major = 1;
 $minor = 2;
-$micro = 7;
-$binary_age = 007;
-$interface_age = 7;
+$micro = 8;
+$interface_age = 8;
 $current_minus_age = 0;
 $exec_prefix = "lib";
 
@@ -31,7 +30,6 @@ sub process_file
 	    s/\@HB_VERSION_MINOR\@/$minor/g;
 	    s/\@HB_VERSION_MICRO\@/$micro/g;
 	    s/\@HB_INTERFACE_AGE\@/$interface_age/g;
-	    s/\@HB_BINARY_AGE\@/$binary_age/g;
 	    s/\@PANGO_CURRENT_MINUS_AGE@/$pango_current_minus_age/g;
 	    s/\@LT_CURRENT_MINUS_AGE@/$current_minus_age/g;
 	    s/\@PERL_PATH@/$perl_path/g;
