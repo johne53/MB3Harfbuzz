@@ -1,6 +1,6 @@
 AC_PREREQ([2.64])
 AC_INIT([HarfBuzz],
-        [1.3.1],
+        [1.3.2],
         [https://github.com/behdad/harfbuzz/issues/new],
         [harfbuzz],
         [http://harfbuzz.org/])
@@ -8,6 +8,8 @@ AC_INIT([HarfBuzz],
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/harfbuzz.pc.in])
 AC_CONFIG_HEADERS([config.h])
+
+AC_USE_SYSTEM_EXTENSIONS
 
 AM_INIT_AUTOMAKE([1.11.1 gnits tar-ustar dist-bzip2 no-dist-gzip -Wall no-define color-tests -Wno-portability])
 AM_CONDITIONAL(AUTOMAKE_OLDER_THAN_1_13, test $am__api_version = 1.11 -o $am__api_version = 1.12)
@@ -22,6 +24,7 @@ LT_INIT([disable-static])
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CXX
+AC_SYS_LARGEFILE
 PKG_PROG_PKG_CONFIG([0.20])
 AM_MISSING_PROG([RAGEL], [ragel])
 AM_MISSING_PROG([GIT], [git])
@@ -145,7 +148,7 @@ AC_ARG_WITH(glib,
 			[Use glib @<:@default=auto@:>@])],,
 	[with_glib=auto])
 have_glib=false
-GLIB_DEPS="glib-2.0 >= 2.16"
+GLIB_DEPS="glib-2.0 >= 2.38"
 AC_SUBST(GLIB_DEPS)
 if test "x$with_glib" = "xyes" -o "x$with_glib" = "xauto"; then
 	PKG_CHECK_MODULES(GLIB, $GLIB_DEPS, have_glib=true, :)
@@ -307,6 +310,16 @@ GRAPHITE2_DEPS="graphite2"
 AC_SUBST(GRAPHITE2_DEPS)
 if test "x$with_graphite2" = "xyes" -o "x$with_graphite2" = "xauto"; then
 	PKG_CHECK_MODULES(GRAPHITE2, $GRAPHITE2_DEPS, have_graphite2=true, :)
+	if test "x$have_graphite2" != "xtrue"; then
+                # If pkg-config is not available, graphite2 can still be there
+		ac_save_CFLAGS="$CFLAGS"
+		ac_save_CPPFLAGS="$CPPFLAGS"
+		CFLAGS="$CFLAGS $GRAPHITE2_CFLAGS"
+		CPPFLAGS="$CPPFLAGS $GRAPHITE2_CFLAGS"
+		AC_CHECK_HEADER(graphite2/Segment.h, have_graphite2=true, :)
+		CPPFLAGS="$ac_save_CPPFLAGS"
+		CFLAGS="$ac_save_CFLAGS"
+	fi
 fi
 if test "x$with_graphite2" = "xyes" -a "x$have_graphite2" != "xtrue"; then
 	AC_MSG_ERROR([graphite2 support requested but libgraphite2 not found])
