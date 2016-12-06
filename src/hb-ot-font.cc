@@ -31,6 +31,7 @@
 #include "hb-font-private.hh"
 
 #include "hb-ot-cmap-table.hh"
+#include "hb-ot-cbdt-table.hh"
 #include "hb-ot-glyf-table.hh"
 #include "hb-ot-head-table.hh"
 #include "hb-ot-hhea-table.hh"
@@ -202,6 +203,91 @@ struct hb_ot_face_glyf_accelerator_t
     extents->y_bearing = MAX (glyph_header.yMin, glyph_header.yMax);
     extents->width     = MAX (glyph_header.xMin, glyph_header.xMax) - extents->x_bearing;
     extents->height    = MIN (glyph_header.yMin, glyph_header.yMax) - extents->y_bearing;
+
+    return true;
+  }
+};
+
+struct hb_ot_face_cbdt_accelerator_t
+{
+  hb_blob_t *cblc_blob;
+  hb_blob_t *cbdt_blob;
+  const OT::CBLC *cblc;
+  const OT::CBDT *cbdt;
+
+  unsigned int cbdt_len;
+  float upem;
+
+  inline void init (hb_face_t *face)
+  {
+    upem = face->get_upem();
+
+    cblc_blob = OT::Sanitizer<OT::CBLC>::sanitize (face->reference_table (HB_OT_TAG_CBLC));
+    cbdt_blob = OT::Sanitizer<OT::CBDT>::sanitize (face->reference_table (HB_OT_TAG_CBDT));
+    cbdt_len = hb_blob_get_length (cbdt_blob);
+
+    if (hb_blob_get_length (cblc_blob) == 0) {
+      cblc = NULL;
+      cbdt = NULL;
+      return;  /* Not a bitmap font. */
+    }
+    cblc = OT::Sanitizer<OT::CBLC>::lock_instance (cblc_blob);
+    cbdt = OT::Sanitizer<OT::CBDT>::lock_instance (cbdt_blob);
+
+  }
+
+  inline void fini (void)
+  {
+    hb_blob_destroy (this->cblc_blob);
+    hb_blob_destroy (this->cbdt_blob);
+  }
+
+  inline bool get_extents (hb_codepoint_t glyph, hb_glyph_extents_t *extents) const
+  {
+    unsigned int x_ppem = upem, y_ppem = upem; /* TODO Use font ppem if available. */
+
+    if (cblc == NULL)
+      return false;  // Not a color bitmap font.
+
+    const OT::IndexSubtableRecord *subtable_record = this->cblc->find_table(glyph, &x_ppem, &y_ppem);
+    if (subtable_record == NULL)
+      return false;
+
+    if (subtable_record->get_extents (extents))
+      return true;
+
+    unsigned int image_offset = 0, image_length = 0, image_format = 0;
+    if (!subtable_record->get_image_data (glyph, &image_offset, &image_length, &image_format))
+      return false;
+
+    {
+      /* TODO Move the following into CBDT struct when adding more formats. */
+
+      if (unlikely (image_offset > cbdt_len || cbdt_len - image_offset < image_length))
+	return false;
+
+      switch (image_format)
+      {
+	case 17: {
+	  if (unlikely (image_length < OT::GlyphBitmapDataFormat17::min_size))
+	    return false;
+
+	  const OT::GlyphBitmapDataFormat17& glyphFormat17 =
+	      OT::StructAtOffset<OT::GlyphBitmapDataFormat17> (this->cbdt, image_offset);
+	  glyphFormat17.glyphMetrics.get_extents (extents);
+	}
+	break;
+	default:
+	  // TODO: Support other image formats.
+	  return false;
+      }
+    }
+
+    /* Convert to the font units. */
+    extents->x_bearing *= upem / (float) x_ppem;
+    extents->y_bearing *= upem / (float) y_ppem;
+    extents->width *= upem / (float) x_ppem;
+    extents->height *= upem / (float) y_ppem;
 
     return true;
   }
@@ -379,6 +465,7 @@ struct hb_ot_font_t
   hb_ot_face_metrics_accelerator_t h_metrics;
   hb_ot_face_metrics_accelerator_t v_metrics;
   hb_lazy_loader_t<hb_ot_face_glyf_accelerator_t> glyf;
+  hb_lazy_loader_t<hb_ot_face_cbdt_accelerator_t> cbdt;
 };
 
 
@@ -395,6 +482,7 @@ _hb_ot_font_create (hb_face_t *face)
   ot_font->v_metrics.init (face, HB_OT_TAG_vhea, HB_OT_TAG_vmtx, HB_TAG_NONE,
 			   ot_font->h_metrics.ascender - ot_font->h_metrics.descender); /* TODO Can we do this lazily? */
   ot_font->glyf.init (face);
+  ot_font->cbdt.init (face);
 
   return ot_font;
 }
@@ -406,6 +494,7 @@ _hb_ot_font_destroy (hb_ot_font_t *ot_font)
   ot_font->h_metrics.fini ();
   ot_font->v_metrics.fini ();
   ot_font->glyf.fini ();
+  ot_font->cbdt.fini ();
 
   free (ot_font);
 }
@@ -464,6 +553,8 @@ hb_ot_get_glyph_extents (hb_font_t *font HB_UNUSED,
 {
   const hb_ot_font_t *ot_font = (const hb_ot_font_t *) font_data;
   bool ret = ot_font->glyf->get_extents (glyph, extents);
+  if (!ret)
+    ret = ot_font->cbdt->get_extents (glyph, extents);
   extents->x_bearing = font->em_scale_x (extents->x_bearing);
   extents->y_bearing = font->em_scale_y (extents->y_bearing);
   extents->width     = font->em_scale_x (extents->width);
