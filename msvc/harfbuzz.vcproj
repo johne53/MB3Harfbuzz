@@ -324,6 +324,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\hb-ot-math.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\hb-ot-shape-complex-arabic.cc"
 				>
 			</File>
@@ -450,6 +454,10 @@
 			</File>
 			<File
 				RelativePath="..\src\hb-ot-layout.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\hb-ot-math.h"
 				>
 			</File>
 			<File
