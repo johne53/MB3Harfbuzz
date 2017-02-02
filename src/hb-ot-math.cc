@@ -34,9 +34,7 @@ static inline const OT::MATH&
 _get_math (hb_face_t *face)
 {
   if (unlikely (!hb_ot_shaper_face_data_ensure (face))) return OT::Null(OT::MATH);
-
   hb_ot_layout_t * layout = hb_ot_layout_from_face (face);
-
   return *(layout->math.get ());
 }
 
@@ -49,10 +47,9 @@ _get_math (hb_face_t *face)
  * @face: #hb_face_t to test
  *
  * This function allows to verify the presence of an OpenType MATH table on the
- * face. If so, such a table will be loaded into memory and sanitized. You can
- * then safely call other functions for math layout and shaping.
+ * face.
  *
- * Return value: #TRUE if face has a MATH table and #FALSE otherwise
+ * Return value: true if face has a MATH table, false otherwise
  *
  * Since: 1.3.3
  **/
@@ -121,10 +118,10 @@ hb_ot_math_get_glyph_top_accent_attachment (hb_font_t *font,
 
 /**
  * hb_ot_math_is_glyph_extended_shape:
- * @font: a #hb_font_t to test
+ * @face: a #hb_face_t to test
  * @glyph: a glyph index to test
  *
- * Return value: #TRUE if the glyph is an extended shape and #FALSE otherwise
+ * Return value: true if the glyph is an extended shape, false otherwise
  *
  * Since: 1.3.3
  **/
