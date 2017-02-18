@@ -667,7 +667,7 @@ parse_float (const char **pp, const char *end, float *pv)
   float v;
 
   errno = 0;
-  v = strtof (p, &pend);
+  v = strtod (p, &pend);
   if (errno || p == pend)
     return false;
 
