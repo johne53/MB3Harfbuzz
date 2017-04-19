@@ -17,21 +17,26 @@ endif ()
 ##
 
 ## HarfBuzz build configurations
-option(HB_HAVE_FREETYPE "Use FreeType" OFF)
-option(HB_HAVE_UNISCRIBE "Enable Uniscribe shaper on Windows" OFF)
-option(HB_HAVE_DIRECWRITE "Enable DirectWrite shaper on Windows" OFF)
-option(HB_HAVE_CORETEXT "Enable CoreText shaper on macOS" ON)
+option(HB_HAVE_FREETYPE "Enable freetype interop helpers" OFF)
+option(HB_HAVE_GRAPHITE2 "Enable Graphite2 complementary shaper" OFF)
+option(HB_HAVE_UNISCRIBE "Enable Uniscribe shaper backend on Windows" OFF)
+option(HB_HAVE_DIRECWRITE "Enable DirectWrite shaper backend on Windows" OFF)
+option(HB_HAVE_CORETEXT "Enable CoreText shaper backend on macOS" ON)
 option(HB_BUILTIN_UCDN "Use HarfBuzz provided UCDN" ON)
+option(HB_HAVE_GLIB "Enable glib unicode functions" OFF)
+option(HB_HAVE_ICU "Enable icu unicode functions" OFF)
+option(HB_BUILD_UTILS "Build harfbuzz utils, needs cairo, freetype, and glib properly be installed" OFF)
+if (HB_BUILD_UTILS)
+  set(HB_HAVE_GLIB ON)
+  set(HB_HAVE_FREETYPE ON)
+endif ()
 
 include_directories(AFTER
   ${PROJECT_SOURCE_DIR}/src
   ${PROJECT_BINARY_DIR}/src
   )
 
-# feel free to discuss these or more with the maintainers
 add_definitions(-DHAVE_OT)
-add_definitions(-DHB_NO_MT)
-add_definitions(-DHB_DISABLE_DEPRECATED)
 
 if (BUILD_SHARED_LIBS)
   add_definitions(-DHAVE_ATEXIT)
@@ -53,30 +58,66 @@ if (EXISTS "${PROJECT_SOURCE_DIR}/src/hb-version.h")
   set(HB_VERSION_H "${PROJECT_SOURCE_DIR}/src/hb-version.h")
 endif ()
 
-## Extract variables from src/Makefile.sources
-file(READ ${PROJECT_SOURCE_DIR}/src/Makefile.sources MAKEFILESOURCES)
-function (extract_make_variable variable directory)
-  string(REGEX MATCH "${variable} = ([^$]+)" temp ${MAKEFILESOURCES})
-  string(REGEX REPLACE "\thb" "${directory}/hb" temp ${temp})
-  string(REGEX MATCHALL "src/[^ ]+" temp ${temp})
-  set(${variable} ${temp} PARENT_SCOPE)
+## Extract variables from Makefile files
+# http://stackoverflow.com/a/27630120/1414809
+function (prepend var prefix)
+  set(listVar "")
+  foreach (f ${ARGN})
+    list(APPEND listVar "${prefix}${f}")
+  endforeach ()
+  set(${var} "${listVar}" PARENT_SCOPE)
 endfunction ()
 
-extract_make_variable(HB_BASE_sources "${PROJECT_SOURCE_DIR}/src")
-extract_make_variable(HB_BASE_headers "${PROJECT_SOURCE_DIR}/src")
-extract_make_variable(HB_OT_sources "${PROJECT_SOURCE_DIR}/src")
-extract_make_variable(HB_OT_headers "${PROJECT_SOURCE_DIR}/src")
+file(READ ${PROJECT_SOURCE_DIR}/src/Makefile.sources SRCSOURCES)
+file(READ ${PROJECT_SOURCE_DIR}/util/Makefile.sources UTILSOURCES)
+file(READ ${PROJECT_SOURCE_DIR}/src/hb-ucdn/Makefile.sources UCDNSOURCES)
+
+function (extract_make_variable variable file)
+  string(REGEX MATCH "${variable} = ([^$]+)\\$" temp ${file})
+  string(REGEX MATCHALL "[^ \n\t\\]+" list ${CMAKE_MATCH_1})
+  set(${variable} ${list} PARENT_SCOPE)
+endfunction ()
+
+extract_make_variable(HB_BASE_sources ${SRCSOURCES})
+extract_make_variable(HB_BASE_headers ${SRCSOURCES})
+extract_make_variable(HB_OT_sources ${SRCSOURCES})
+extract_make_variable(HB_OT_headers ${SRCSOURCES})
+extract_make_variable(HB_BASE_RAGEL_GENERATED_sources ${SRCSOURCES})
+extract_make_variable(HB_OT_RAGEL_GENERATED_sources ${SRCSOURCES})
+
+extract_make_variable(HB_VIEW_sources ${UTILSOURCES})
+extract_make_variable(HB_SHAPE_sources ${UTILSOURCES})
+extract_make_variable(HB_OT_SHAPE_CLOSURE_sources ${UTILSOURCES})
+
+extract_make_variable(LIBHB_UCDN_sources ${UCDNSOURCES})
+
+prepend(HB_BASE_sources "${PROJECT_SOURCE_DIR}/src/" ${HB_BASE_sources})
+prepend(HB_BASE_headers "${PROJECT_SOURCE_DIR}/src/" ${HB_BASE_headers})
+prepend(HB_OT_sources "${PROJECT_SOURCE_DIR}/src/" ${HB_OT_sources})
+prepend(HB_OT_headers "${PROJECT_SOURCE_DIR}/src/" ${HB_OT_headers})
 if (IN_HB_DIST)
-  extract_make_variable(HB_BASE_RAGEL_GENERATED_sources "${PROJECT_SOURCE_DIR}/src")
-  extract_make_variable(HB_OT_RAGEL_GENERATED_sources "${PROJECT_SOURCE_DIR}/src")
+  prepend(HB_BASE_RAGEL_GENERATED_sources "${PROJECT_SOURCE_DIR}/src/" ${HB_BASE_RAGEL_GENERATED_sources})
+  prepend(HB_OT_RAGEL_GENERATED_sources "${PROJECT_SOURCE_DIR}/src/" ${HB_OT_RAGEL_GENERATED_sources})
 else ()
-  extract_make_variable(HB_BASE_RAGEL_GENERATED_sources "${PROJECT_BINARY_DIR}/src")
-  extract_make_variable(HB_OT_RAGEL_GENERATED_sources "${PROJECT_BINARY_DIR}/src")
+  prepend(HB_BASE_RAGEL_GENERATED_sources "${PROJECT_BINARY_DIR}/src/" ${HB_BASE_RAGEL_GENERATED_sources})
+  prepend(HB_OT_RAGEL_GENERATED_sources "${PROJECT_BINARY_DIR}/src/" ${HB_OT_RAGEL_GENERATED_sources})
 endif ()
+prepend(HB_VIEW_sources "${PROJECT_SOURCE_DIR}/util/" ${HB_VIEW_sources})
+prepend(HB_SHAPE_sources "${PROJECT_SOURCE_DIR}/util/" ${HB_SHAPE_sources})
+prepend(HB_OT_SHAPE_CLOSURE_sources "${PROJECT_SOURCE_DIR}/util/" ${HB_OT_SHAPE_CLOSURE_sources})
+
+prepend(LIBHB_UCDN_sources "${PROJECT_SOURCE_DIR}/src/hb-ucdn/" ${LIBHB_UCDN_sources})
+
+file(READ configure.ac CONFIGUREAC)
+string(REGEX MATCH "\\[(([0-9]+)\\.([0-9]+)\\.([0-9]+))\\]" HB_VERSION_MATCH ${CONFIGUREAC})
+set(HB_VERSION ${CMAKE_MATCH_1})
+set(HB_VERSION_MAJOR ${CMAKE_MATCH_2})
+set(HB_VERSION_MINOR ${CMAKE_MATCH_3})
+set(HB_VERSION_MICRO ${CMAKE_MATCH_4})
 ##
 
 if (NOT IN_HB_DIST)
-  ## execute ragel tasks
+  ## Define ragel tasks
   find_program(RAGEL "ragel")
 
   if (RAGEL)
@@ -97,13 +138,6 @@ if (NOT IN_HB_DIST)
   ##
 
   ## Generate hb-version.h
-  file(READ configure.ac CONFIGUREAC)
-  string(REGEX MATCH "\\[(([0-9]+)\\.([0-9]+)\\.([0-9]+))\\]" HB_VERSION_MATCH ${CONFIGUREAC})
-  set(HB_VERSION ${CMAKE_MATCH_1})
-  set(HB_VERSION_MAJOR ${CMAKE_MATCH_2})
-  set(HB_VERSION_MINOR ${CMAKE_MATCH_3})
-  set(HB_VERSION_MICRO ${CMAKE_MATCH_4})
-
   set(HB_VERSION_H_IN "${PROJECT_SOURCE_DIR}/src/hb-version.h.in")
   set(HB_VERSION_H "${PROJECT_BINARY_DIR}/src/hb-version.h")
   set_source_files_properties("${HB_VERSION_H}" PROPERTIES GENERATED true)
@@ -115,7 +149,7 @@ if (NOT IN_HB_DIST)
   ##
 endif ()
 
-## Define source and headers of projects
+## Define sources and headers of the project
 set(project_sources
   ${HB_BASE_sources}
   ${HB_BASE_RAGEL_GENERATED_sources}
@@ -157,67 +191,165 @@ if (HB_HAVE_FREETYPE)
   endif ()
 
   if (FREETYPE_INCLUDE_DIR AND FREETYPE_ACTUAL_LIBRARY)
-    set(THIRD_PARTY_LIBS ${THIRD_PARTY_LIBS} ${FREETYPE_ACTUAL_LIBRARY})
+    list(APPEND THIRD_PARTY_LIBS ${FREETYPE_ACTUAL_LIBRARY})
     add_definitions(-DHAVE_FREETYPE=1 -DHAVE_FT_FACE_GETCHARVARIANTINDEX=1)
   endif ()
 
-  set(project_sources ${project_sources} ${PROJECT_SOURCE_DIR}/src/hb-ft.cc)
-  set(project_headers ${project_headers} ${PROJECT_SOURCE_DIR}/src/hb-ft.h)
+  list(APPEND project_sources ${PROJECT_SOURCE_DIR}/src/hb-ft.cc)
+  list(APPEND project_headers ${PROJECT_SOURCE_DIR}/src/hb-ft.h)
+endif ()
+
+if (HB_HAVE_GRAPHITE2)
+  add_definitions(-DHAVE_GRAPHITE2)
+
+  find_path(GRAPHITE2_INCLUDE_DIR graphite2/Font.h)
+  find_library(GRAPHITE2_LIBRARY graphite2)
+
+  include_directories(${GRAPHITE2_INCLUDE_DIR})
+
+  list(APPEND project_sources ${PROJECT_SOURCE_DIR}/src/hb-graphite2.cc)
+  list(APPEND project_headers ${PROJECT_SOURCE_DIR}/src/hb-graphite2.h)
+
+  list(APPEND THIRD_PARTY_LIBS ${GRAPHITE2_LIBRARY})
 endif ()
 
 if (HB_BUILTIN_UCDN)
   include_directories(src/hb-ucdn)
   add_definitions(-DHAVE_UCDN)
 
-  set(project_headers ${project_headers} ${PROJECT_SOURCE_DIR}/src/hb-ucdn/ucdn.h)
-
-  set(project_sources
-    ${project_sources}
-
+  list(APPEND project_sources
     ${PROJECT_SOURCE_DIR}/src/hb-ucdn.cc
-    ${PROJECT_SOURCE_DIR}/src/hb-ucdn/ucdn.c
-    ${PROJECT_SOURCE_DIR}/src/hb-ucdn/unicodedata_db.h)
-else ()
-  add_definitions(-DHB_NO_UNICODE_FUNCS)
+    ${LIBHB_UCDN_sources})
+endif ()
+
+if (HB_HAVE_GLIB)
+  add_definitions(-DHAVE_GLIB)
+
+  # https://github.com/WebKit/webkit/blob/master/Source/cmake/FindGLIB.cmake
+  find_package(PkgConfig)
+  pkg_check_modules(PC_GLIB QUIET glib-2.0)
+
+  find_library(GLIB_LIBRARIES NAMES glib-2.0 HINTS ${PC_GLIB_LIBDIR} ${PC_GLIB_LIBRARY_DIRS})
+  find_path(GLIBCONFIG_INCLUDE_DIR NAMES glibconfig.h HINTS ${PC_LIBDIR} ${PC_LIBRARY_DIRS} ${PC_GLIB_INCLUDEDIR} ${PC_GLIB_INCLUDE_DIRS} PATH_SUFFIXES glib-2.0/include)
+  find_path(GLIB_INCLUDE_DIR NAMES glib.h HINTS ${PC_GLIB_INCLUDEDIR} ${PC_GLIB_INCLUDE_DIRS} PATH_SUFFIXES glib-2.0)
+
+  include_directories(${GLIBCONFIG_INCLUDE_DIR} ${GLIB_INCLUDE_DIR})
+
+  list(APPEND project_sources ${PROJECT_SOURCE_DIR}/src/hb-glib.cc)
+  list(APPEND project_headers ${PROJECT_SOURCE_DIR}/src/hb-glib.h)
+
+  list(APPEND THIRD_PARTY_LIBS ${GLIB_LIBRARIES})
+endif ()
+
+if (HB_HAVE_ICU)
+  add_definitions(-DHAVE_ICU)
+
+  # https://github.com/WebKit/webkit/blob/master/Source/cmake/FindICU.cmake
+  find_package(PkgConfig)
+  pkg_check_modules(PC_ICU QUIET icu-uc)
+
+  find_path(ICU_INCLUDE_DIR NAMES unicode/utypes.h HINTS ${PC_ICU_INCLUDE_DIRS} ${PC_ICU_INCLUDEDIR})
+  find_library(ICU_LIBRARY NAMES libicuuc cygicuuc cygicuuc32 icuuc HINTS ${PC_ICU_LIBRARY_DIRS} ${PC_ICU_LIBDIR})
+
+  include_directories(${ICU_INCLUDE_DIR})
+
+  list(APPEND project_sources ${PROJECT_SOURCE_DIR}/src/hb-icu.cc)
+  list(APPEND project_headers ${PROJECT_SOURCE_DIR}/src/hb-icu.h)
+
+  list(APPEND THIRD_PARTY_LIBS ${ICU_LIBRARY})
 endif ()
 
 if (APPLE AND HB_HAVE_CORETEXT)
   # Apple Advanced Typography
   add_definitions(-DHAVE_CORETEXT)
 
-  set(project_sources ${project_sources} ${PROJECT_SOURCE_DIR}/src/hb-coretext.cc)
-  set(project_headers ${project_headers} ${PROJECT_SOURCE_DIR}/src/hb-coretext.h)
+  list(APPEND project_sources ${PROJECT_SOURCE_DIR}/src/hb-coretext.cc)
+  list(APPEND project_headers ${PROJECT_SOURCE_DIR}/src/hb-coretext.h)
 
   find_library(APPLICATION_SERVICES_FRAMEWORK ApplicationServices)
   mark_as_advanced(APPLICATION_SERVICES_FRAMEWORK)
   if (APPLICATION_SERVICES_FRAMEWORK)
-    set(THIRD_PARTY_LIBS ${THIRD_PARTY_LIBS} ${APPLICATION_SERVICES_FRAMEWORK})
+    list(APPEND THIRD_PARTY_LIBS ${APPLICATION_SERVICES_FRAMEWORK})
   endif (APPLICATION_SERVICES_FRAMEWORK)
 endif ()
 
 if (WIN32 AND HB_HAVE_UNISCRIBE)
   add_definitions(-DHAVE_UNISCRIBE)
 
-  set(project_sources ${project_sources} ${PROJECT_SOURCE_DIR}/src/hb-uniscribe.cc)
-  set(project_headers ${project_headers} ${PROJECT_SOURCE_DIR}/src/hb-uniscribe.h)
+  list(APPEND project_sources ${PROJECT_SOURCE_DIR}/src/hb-uniscribe.cc)
+  list(APPEND project_headers ${PROJECT_SOURCE_DIR}/src/hb-uniscribe.h)
 
-  set(THIRD_PARTY_LIBS ${THIRD_PARTY_LIBS} usp10 gdi32 rpcrt4)
+  list(APPEND THIRD_PARTY_LIBS usp10 gdi32 rpcrt4)
 endif ()
 
 if (WIN32 AND HB_HAVE_DIRECTWRITE)
   add_definitions(-DHAVE_DIRECTWRITE)
 
-  set(project_sources ${project_sources} ${PROJECT_SOURCE_DIR}/src/hb-directwrite.cc)
-  set(project_headers ${project_headers} ${PROJECT_SOURCE_DIR}/src/hb-directwrite.h)
+  list(APPEND project_sources ${PROJECT_SOURCE_DIR}/src/hb-directwrite.cc)
+  list(APPEND project_headers ${PROJECT_SOURCE_DIR}/src/hb-directwrite.h)
 
-  set(THIRD_PARTY_LIBS ${THIRD_PARTY_LIBS} dwrite rpcrt4)
+  list(APPEND THIRD_PARTY_LIBS dwrite rpcrt4)
 endif ()
 
 set(project_sources ${project_sources} ${project_headers})
 ##
 
+## Atomic ops availability detection
+file(WRITE "${PROJECT_BINARY_DIR}/try_compile_intel_atomic_primitives.c"
+"		void memory_barrier (void) { __sync_synchronize (); }
+		int atomic_add (int *i) { return __sync_fetch_and_add (i, 1); }
+		int mutex_trylock (int *m) { return __sync_lock_test_and_set (m, 1); }
+		void mutex_unlock (int *m) { __sync_lock_release (m); }
+		int main () { return 0; }
+")
+try_compile(HB_HAVE_INTEL_ATOMIC_PRIMITIVES
+  ${PROJECT_BINARY_DIR}/try_compile_intel_atomic_primitives
+  SOURCES ${PROJECT_BINARY_DIR}/try_compile_intel_atomic_primitives.c)
+if (HB_HAVE_INTEL_ATOMIC_PRIMITIVES)
+  add_definitions(-DHAVE_INTEL_ATOMIC_PRIMITIVES)
+endif ()
+
+file(WRITE "${PROJECT_BINARY_DIR}/try_compile_solaris_atomic_ops.c"
+"		#include <atomic.h>
+		/* This requires Solaris Studio 12.2 or newer: */
+		#include <mbarrier.h>
+		void memory_barrier (void) { __machine_rw_barrier (); }
+		int atomic_add (volatile unsigned *i) { return atomic_add_int_nv (i, 1); }
+		void *atomic_ptr_cmpxchg (volatile void **target, void *cmp, void *newval) { return atomic_cas_ptr (target, cmp, newval); }
+		int main () { return 0; }
+")
+try_compile(HB_HAVE_SOLARIS_ATOMIC_OPS
+  ${PROJECT_BINARY_DIR}/try_compile_solaris_atomic_ops
+  SOURCES ${PROJECT_BINARY_DIR}/try_compile_solaris_atomic_ops.c)
+if (HB_HAVE_SOLARIS_ATOMIC_OPS)
+  add_definitions(-DHAVE_SOLARIS_ATOMIC_OPS)
+endif ()
+##
+
 add_library(harfbuzz ${project_sources})
 target_link_libraries(harfbuzz ${THIRD_PARTY_LIBS})
+
+if (HB_BUILD_UTILS)
+  # https://github.com/WebKit/webkit/blob/master/Source/cmake/FindCairo.cmake
+  find_package(PkgConfig)
+  pkg_check_modules(PC_CAIRO QUIET cairo)
+
+  find_path(CAIRO_INCLUDE_DIRS NAMES cairo.h HINTS ${PC_CAIRO_INCLUDEDIR} ${PC_CAIRO_INCLUDE_DIRS} PATH_SUFFIXES cairo)
+  find_library(CAIRO_LIBRARIESNAMES cairo HINTS ${PC_CAIRO_LIBDIR} ${PC_CAIRO_LIBRARY_DIRS})
+
+  add_definitions("-DPACKAGE_NAME=\"HarfBuzz\"")
+  add_definitions("-DPACKAGE_VERSION=\"${HB_VERSION}\"")
+  include_directories(${CAIRO_INCLUDE_DIRS})
+
+  add_executable(hb-view ${HB_VIEW_sources})
+  target_link_libraries(hb-view harfbuzz ${CAIRO_LIBRARIESNAMES})
+
+  add_executable(hb-shape ${HB_SHAPE_sources})
+  target_link_libraries(hb-shape harfbuzz)
+
+  add_executable(hb-ot-shape-closure ${HB_OT_SHAPE_CLOSURE_sources})
+  target_link_libraries(hb-ot-shape-closure harfbuzz)
+endif ()
 
 ## Install
 if (NOT SKIP_INSTALL_HEADERS AND NOT SKIP_INSTALL_ALL)
