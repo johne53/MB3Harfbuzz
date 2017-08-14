@@ -56,16 +56,23 @@ TESTS = \
 	tests/hangul-jamo.tests \
 	tests/hyphens.tests \
 	tests/indic-joiner-candrabindu.tests \
+	tests/indic-joiners.tests \
 	tests/indic-old-spec.tests \
 	tests/indic-pref-blocking.tests \
+	tests/indic-syllable.tests \
 	tests/language-tags.tests \
 	tests/ligature-id.tests \
 	tests/mark-filtering-sets.tests \
 	tests/mongolian-variation-selector.tests \
 	tests/spaces.tests \
 	tests/simple.tests \
+	tests/tibetan-contractions-1.tests \
+	tests/tibetan-contractions-2.tests \
+	tests/tibetan-vowels.tests \
 	tests/use.tests \
 	tests/use-marchen.tests \
+	tests/use-syllable.tests \
+	tests/variations-rvrn.tests \
 	tests/vertical.tests \
 	tests/zero-width-marks.tests \
 	$(NULL)

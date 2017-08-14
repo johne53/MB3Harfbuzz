@@ -63,13 +63,19 @@ HB_BEGIN_DECLS
  */
 typedef struct hb_glyph_info_t {
   hb_codepoint_t codepoint;
-  hb_mask_t      mask;
+  hb_mask_t      mask; /* Holds hb_glyph_flags_t after hb_shape() */
   uint32_t       cluster;
 
   /*< private >*/
   hb_var_int_t   var1;
   hb_var_int_t   var2;
 } hb_glyph_info_t;
+
+typedef enum { /*< flags >*/
+  HB_GLYPH_FLAG_UNSAFE_TO_BREAK		= 0x00000001,
+
+  HB_GLYPH_FLAG_DEFINED			= 0x00000001 /* OR of all defined flags */
+} hb_glyph_flags_t;
 
 /**
  * hb_glyph_position_t:
@@ -162,6 +168,7 @@ hb_buffer_set_user_data (hb_buffer_t        *buffer,
 HB_EXTERN void *
 hb_buffer_get_user_data (hb_buffer_t        *buffer,
 			 hb_user_data_key_t *key);
+
 
 /**
  * hb_buffer_content_type_t:
@@ -359,6 +366,11 @@ hb_buffer_add_codepoints (hb_buffer_t          *buffer,
 			  unsigned int          item_offset,
 			  int                   item_length);
 
+HB_EXTERN void
+hb_buffer_append (hb_buffer_t *buffer,
+		  hb_buffer_t *source,
+		  unsigned int start,
+		  unsigned int end);
 
 HB_EXTERN hb_bool_t
 hb_buffer_set_length (hb_buffer_t  *buffer,
@@ -403,7 +415,8 @@ typedef enum { /*< flags >*/
   HB_BUFFER_SERIALIZE_FLAG_NO_CLUSTERS		= 0x00000001u,
   HB_BUFFER_SERIALIZE_FLAG_NO_POSITIONS		= 0x00000002u,
   HB_BUFFER_SERIALIZE_FLAG_NO_GLYPH_NAMES	= 0x00000004u,
-  HB_BUFFER_SERIALIZE_FLAG_GLYPH_EXTENTS	= 0x00000008u
+  HB_BUFFER_SERIALIZE_FLAG_GLYPH_EXTENTS	= 0x00000008u,
+  HB_BUFFER_SERIALIZE_FLAG_GLYPH_FLAGS		= 0x00000010u
 } hb_buffer_serialize_flags_t;
 
 /**

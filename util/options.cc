@@ -240,6 +240,8 @@ parse_features (const char *name G_GNUC_UNUSED,
   } while (p);
 
   shape_opts->features = (hb_feature_t *) calloc (shape_opts->num_features, sizeof (*shape_opts->features));
+  if (!shape_opts->features)
+    return false;
 
   /* now do the actual parsing */
   p = s;
@@ -281,6 +283,8 @@ parse_variations (const char *name G_GNUC_UNUSED,
   } while (p);
 
   font_opts->variations = (hb_variation_t *) calloc (font_opts->num_variations, sizeof (*font_opts->variations));
+  if (!font_opts->variations)
+    return false;
 
   /* now do the actual parsing */
   p = s;
@@ -334,6 +338,7 @@ shape_options_t::add_options (option_parser_t *parser)
     {"utf8-clusters",	0, 0, G_OPTION_ARG_NONE,	&this->utf8_clusters,		"Use UTF8 byte indices, not char indices",	NULL},
     {"cluster-level",	0, 0, G_OPTION_ARG_INT,		&this->cluster_level,		"Cluster merging level (default: 0)",	"0/1/2"},
     {"normalize-glyphs",0, 0, G_OPTION_ARG_NONE,	&this->normalize_glyphs,	"Rearrange glyph clusters in nominal order",	NULL},
+    {"verify",		0, 0, G_OPTION_ARG_NONE,	&this->verify,			"Perform sanity checks on shaping results",	NULL},
     {"num-iterations",	0, 0, G_OPTION_ARG_INT,		&this->num_iterations,		"Run shaper N times (default: 1)",	"N"},
     {NULL}
   };
@@ -777,6 +782,8 @@ format_options_t::add_options (option_parser_t *parser)
     {"no-clusters",	0, G_OPTION_FLAG_REVERSE,
 			      G_OPTION_ARG_NONE,	&this->show_clusters,		"Do not output cluster indices",					NULL},
     {"show-extents",	0, 0, G_OPTION_ARG_NONE,	&this->show_extents,		"Output glyph extents",							NULL},
+    {"show-flags",	0, 0, G_OPTION_ARG_NONE,	&this->show_flags,		"Output glyph flags",							NULL},
+    {"trace",		0, 0, G_OPTION_ARG_NONE,	&this->trace,			"Output interim shaping results",					NULL},
     {NULL}
   };
   parser->add_group (entries,
@@ -818,7 +825,8 @@ format_options_t::serialize_glyphs (hb_buffer_t *buffer,
   unsigned int num_glyphs = hb_buffer_get_length (buffer);
   unsigned int start = 0;
 
-  while (start < num_glyphs) {
+  while (start < num_glyphs)
+  {
     char buf[1024];
     unsigned int consumed;
     start += hb_buffer_serialize_glyphs (buffer, start, num_glyphs,
@@ -845,7 +853,8 @@ format_options_t::serialize_buffer_of_text (hb_buffer_t  *buffer,
 					    hb_font_t    *font,
 					    GString      *gs)
 {
-  if (show_text) {
+  if (show_text)
+  {
     serialize_line_no (line_no, gs);
     g_string_append_c (gs, '(');
     g_string_append_len (gs, text, text_len);
@@ -853,7 +862,8 @@ format_options_t::serialize_buffer_of_text (hb_buffer_t  *buffer,
     g_string_append_c (gs, '\n');
   }
 
-  if (show_unicode) {
+  if (show_unicode)
+  {
     serialize_line_no (line_no, gs);
     serialize_unicode (buffer, gs);
     g_string_append_c (gs, '\n');
@@ -865,6 +875,7 @@ format_options_t::serialize_message (unsigned int  line_no,
 				     GString      *gs)
 {
   serialize_line_no (line_no, gs);
+  g_string_append_printf (gs, "message: ");
   g_string_append_printf (gs, "%s", msg);
   g_string_append_c (gs, '\n');
 }

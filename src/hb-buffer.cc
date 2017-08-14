@@ -267,7 +267,7 @@ hb_buffer_t::add (hb_codepoint_t  codepoint,
 
   memset (glyph, 0, sizeof (*glyph));
   glyph->codepoint = codepoint;
-  glyph->mask = 1;
+  glyph->mask = 0;
   glyph->cluster = cluster;
 
   len++;
@@ -550,9 +550,12 @@ hb_buffer_t::merge_clusters_impl (unsigned int start,
 				  unsigned int end)
 {
   if (cluster_level == HB_BUFFER_CLUSTER_LEVEL_CHARACTERS)
+  {
+    unsafe_to_break (start, end);
     return;
+  }
 
-  uint32_t cluster = info[start].cluster;
+  unsigned int cluster = info[start].cluster;
 
   for (unsigned int i = start + 1; i < end; i++)
     cluster = MIN (cluster, info[i].cluster);
@@ -568,10 +571,10 @@ hb_buffer_t::merge_clusters_impl (unsigned int start,
   /* If we hit the start of buffer, continue in out-buffer. */
   if (idx == start)
     for (unsigned int i = out_len; i && out_info[i - 1].cluster == info[start].cluster; i--)
-      out_info[i - 1].cluster = cluster;
+      set_cluster (out_info[i - 1], cluster);
 
   for (unsigned int i = start; i < end; i++)
-    info[i].cluster = cluster;
+    set_cluster (info[i], cluster);
 }
 void
 hb_buffer_t::merge_out_clusters (unsigned int start,
@@ -583,7 +586,7 @@ hb_buffer_t::merge_out_clusters (unsigned int start,
   if (unlikely (end - start < 2))
     return;
 
-  uint32_t cluster = out_info[start].cluster;
+  unsigned int cluster = out_info[start].cluster;
 
   for (unsigned int i = start + 1; i < end; i++)
     cluster = MIN (cluster, out_info[i].cluster);
@@ -599,14 +602,16 @@ hb_buffer_t::merge_out_clusters (unsigned int start,
   /* If we hit the end of out-buffer, continue in buffer. */
   if (end == out_len)
     for (unsigned int i = idx; i < len && info[i].cluster == out_info[end - 1].cluster; i++)
-      info[i].cluster = cluster;
+      set_cluster (info[i], cluster);
 
   for (unsigned int i = start; i < end; i++)
-    out_info[i].cluster = cluster;
+    set_cluster (out_info[i], cluster);
 }
 void
 hb_buffer_t::delete_glyph ()
 {
+  /* The logic here is duplicated in hb_ot_hide_default_ignorables(). */
+
   unsigned int cluster = info[idx].cluster;
   if (idx + 1 < len && cluster == info[idx + 1].cluster)
   {
@@ -619,9 +624,10 @@ hb_buffer_t::delete_glyph ()
     /* Merge cluster backward. */
     if (cluster < out_info[out_len - 1].cluster)
     {
+      unsigned int mask = info[idx].mask;
       unsigned int old_cluster = out_info[out_len - 1].cluster;
       for (unsigned i = out_len; i && out_info[i - 1].cluster == old_cluster; i--)
-	out_info[i - 1].cluster = cluster;
+	set_cluster (out_info[i - 1], cluster, mask);
     }
     goto done;
   }
@@ -635,6 +641,32 @@ hb_buffer_t::delete_glyph ()
 
 done:
   skip_glyph ();
+}
+
+void
+hb_buffer_t::unsafe_to_break_impl (unsigned int start, unsigned int end)
+{
+  unsigned int cluster = (unsigned int) -1;
+  cluster = _unsafe_to_break_find_min_cluster (info, start, end, cluster);
+  _unsafe_to_break_set_mask (info, start, end, cluster);
+}
+void
+hb_buffer_t::unsafe_to_break_from_outbuffer (unsigned int start, unsigned int end)
+{
+  if (!have_output)
+  {
+    unsafe_to_break_impl (start, end);
+    return;
+  }
+
+  assert (start <= out_len);
+  assert (idx <= end);
+
+  unsigned int cluster = (unsigned int) -1;
+  cluster = _unsafe_to_break_find_min_cluster (out_info, start, out_len, cluster);
+  cluster = _unsafe_to_break_find_min_cluster (info, idx, end, cluster);
+  _unsafe_to_break_set_mask (out_info, start, out_len, cluster);
+  _unsafe_to_break_set_mask (info, idx, end, cluster);
 }
 
 void
@@ -1666,6 +1698,58 @@ hb_buffer_add_codepoints (hb_buffer_t          *buffer,
 }
 
 
+/**
+ * hb_buffer_append:
+ * @buffer: an #hb_buffer_t.
+ * @source: source #hb_buffer_t.
+ * @start: start index into source buffer to copy.  Use 0 to copy from start of buffer.
+ * @end: end index into source buffer to copy.  Use (unsigned int) -1 to copy to end of buffer.
+ *
+ * Append (part of) contents of another buffer to this buffer.
+ *
+ * Since: 1.5.0
+ **/
+HB_EXTERN void
+hb_buffer_append (hb_buffer_t *buffer,
+		  hb_buffer_t *source,
+		  unsigned int start,
+		  unsigned int end)
+{
+  assert (!buffer->have_output && !source->have_output);
+  assert (buffer->have_positions == source->have_positions ||
+	  !buffer->len || !source->len);
+  assert (buffer->content_type == source->content_type ||
+	  !buffer->len || !source->len);
+
+  if (end > source->len)
+    end = source->len;
+  if (start > end)
+    start = end;
+  if (start == end)
+    return;
+
+  if (!buffer->len)
+    buffer->content_type = source->content_type;
+  if (!buffer->have_positions && source->have_positions)
+    buffer->clear_positions ();
+
+  if (buffer->len + (end - start) < buffer->len) /* Overflows. */
+  {
+    buffer->in_error = true;
+    return;
+  }
+
+  unsigned int orig_len = buffer->len;
+  hb_buffer_set_length (buffer, buffer->len + (end - start));
+  if (buffer->in_error)
+    return;
+
+  memcpy (buffer->info + orig_len, source->info + start, (end - start) * sizeof (buffer->info[0]));
+  if (buffer->have_positions)
+    memcpy (buffer->pos + orig_len, source->pos + start, (end - start) * sizeof (buffer->pos[0]));
+}
+
+
 static int
 compare_info_codepoint (const hb_glyph_info_t *pa,
 			const hb_glyph_info_t *pb)
@@ -1736,7 +1820,8 @@ void
 hb_buffer_normalize_glyphs (hb_buffer_t *buffer)
 {
   assert (buffer->have_positions);
-  assert (buffer->content_type == HB_BUFFER_CONTENT_TYPE_GLYPHS);
+  assert (buffer->content_type == HB_BUFFER_CONTENT_TYPE_GLYPHS ||
+	  (!buffer->len && buffer->content_type == HB_BUFFER_CONTENT_TYPE_INVALID));
 
   bool backward = HB_DIRECTION_IS_BACKWARD (buffer->props.direction);
 
