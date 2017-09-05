@@ -31,10 +31,6 @@
 #include "hb-utf-private.hh"
 
 
-#ifndef HB_DEBUG_BUFFER
-#define HB_DEBUG_BUFFER (HB_DEBUG+0)
-#endif
-
 /**
  * SECTION: hb-buffer
  * @title: Buffers
@@ -1412,6 +1408,23 @@ hb_buffer_get_glyph_positions (hb_buffer_t  *buffer,
 }
 
 /**
+ * hb_glyph_info_get_glyph_flags:
+ * @info: a #hb_glyph_info_t.
+ *
+ * Returns glyph flags encoded within a #hb_glyph_info_t.
+ *
+ * Return value:
+ * The #hb_glyph_flags_t encoded within @info.
+ *
+ * Since: 1.5.0
+ **/
+hb_glyph_flags_t
+(hb_glyph_info_get_glyph_flags) (const hb_glyph_info_t *info)
+{
+  return hb_glyph_info_get_glyph_flags (info);
+}
+
+/**
  * hb_buffer_reverse:
  * @buffer: an #hb_buffer_t.
  *
@@ -1865,16 +1878,26 @@ hb_buffer_t::sort (unsigned int start, unsigned int end, int(*compar)(const hb_g
  * Comparing buffers.
  */
 
+/**
+ * hb_buffer_diff:
+ *
+ * If dottedcircle_glyph is (hb_codepoint_t) -1 then %HB_BUFFER_DIFF_FLAG_DOTTED_CIRCLE_PRESENT
+ * and %HB_BUFFER_DIFF_FLAG_NOTDEF_PRESENT are never returned.  This should be used by most
+ * callers if just comparing two buffers is needed.
+ *
+ * Since: 1.5.0
+ **/
 hb_buffer_diff_flags_t
 hb_buffer_diff (hb_buffer_t *buffer,
 		hb_buffer_t *reference,
 		hb_codepoint_t dottedcircle_glyph,
 		unsigned int position_fuzz)
 {
-  if (buffer->content_type != reference->content_type)
+  if (buffer->content_type != reference->content_type && buffer->len && reference->len)
     return HB_BUFFER_DIFF_FLAG_CONTENT_TYPE_MISMATCH;
 
   hb_buffer_diff_flags_t result = HB_BUFFER_DIFF_FLAG_EQUAL;
+  bool contains = dottedcircle_glyph != (hb_codepoint_t) -1;
 
   unsigned int count = reference->len;
 
@@ -1888,9 +1911,9 @@ hb_buffer_diff (hb_buffer_t *buffer,
     unsigned int i;
     for (i = 0; i < count; i++)
     {
-      if (info[i].codepoint == dottedcircle_glyph)
+      if (contains && info[i].codepoint == dottedcircle_glyph)
         result |= HB_BUFFER_DIFF_FLAG_DOTTED_CIRCLE_PRESENT;
-      else if (info[i].codepoint == 0)
+      if (contains && info[i].codepoint == 0)
         result |= HB_BUFFER_DIFF_FLAG_NOTDEF_PRESENT;
     }
     result |= HB_BUFFER_DIFF_FLAG_LENGTH_MISMATCH;
@@ -1909,10 +1932,10 @@ hb_buffer_diff (hb_buffer_t *buffer,
     if (buf_info->cluster != ref_info->cluster)
       result |= HB_BUFFER_DIFF_FLAG_CLUSTER_MISMATCH;
     if ((buf_info->mask & HB_GLYPH_FLAG_DEFINED) != (ref_info->mask & HB_GLYPH_FLAG_DEFINED))
-      result |= HB_BUFFER_DIFF_FLAG_MASK_MISMATCH;
-    if (ref_info->codepoint == dottedcircle_glyph)
+      result |= HB_BUFFER_DIFF_FLAG_GLYPH_FLAGS_MISMATCH;
+    if (contains && ref_info->codepoint == dottedcircle_glyph)
       result |= HB_BUFFER_DIFF_FLAG_DOTTED_CIRCLE_PRESENT;
-    else if (ref_info->codepoint == 0)
+    if (contains && ref_info->codepoint == 0)
       result |= HB_BUFFER_DIFF_FLAG_NOTDEF_PRESENT;
     buf_info++;
     ref_info++;
