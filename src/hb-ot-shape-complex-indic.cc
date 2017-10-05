@@ -208,7 +208,21 @@ set_indic_properties (hb_glyph_info_t &info)
     cat = OT_M;
     pos = POS_ABOVE_C;
   }
+  else if (unlikely (u == 0x0A51u))
+  {
+    /* https://github.com/behdad/harfbuzz/issues/524 */
+    cat = OT_M;
+    pos = POS_BELOW_C;
+  }
 
+  /* According to ScriptExtensions.txt, these Grantha marks may also be used in Tamil,
+   * so the Indic shaper needs to know their categories. */
+  else if (unlikely (u == 0x11303u)) cat = OT_SM;
+  else if (unlikely (u == 0x1133cu)) cat = OT_N;
+
+  else if (unlikely (u == 0x0AFBu)) cat = OT_N; /* https://github.com/behdad/harfbuzz/issues/552 */
+
+  else if (unlikely (u == 0x0980u)) cat = OT_PLACEHOLDER; /* https://github.com/behdad/harfbuzz/issues/538 */
   else if (unlikely (u == 0x17C6u)) cat = OT_N; /* Khmer Bindu doesn't like to be repositioned. */
   else if (unlikely (hb_in_range<hb_codepoint_t> (u, 0x2010u, 0x2011u)))
 				    cat = OT_PLACEHOLDER;
@@ -1826,6 +1840,7 @@ const hb_ot_complex_shaper_t _hb_ot_complex_shaper_indic =
   compose_indic,
   setup_masks_indic,
   NULL, /* disable_otl */
+  NULL, /* reorder_marks */
   HB_OT_SHAPE_ZERO_WIDTH_MARKS_NONE,
   false, /* fallback_position */
 };
