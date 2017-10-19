@@ -198,7 +198,7 @@ set_indic_properties (hb_glyph_info_t &info)
 				      0x1CEEu, 0x1CF1u)))
   {
     cat = OT_Symbol;
-    ASSERT_STATIC ((int) INDIC_SYLLABIC_CATEGORY_AVAGRAHA == OT_Symbol);
+    static_assert (((int) INDIC_SYLLABIC_CATEGORY_AVAGRAHA == OT_Symbol), "");
   }
   else if (unlikely (hb_in_range<hb_codepoint_t> (u, 0x17CDu, 0x17D1u) ||
 		     u == 0x17CBu || u == 0x17D3u || u == 0x17DDu)) /* Khmer Various signs */
@@ -435,7 +435,7 @@ collect_features_indic (hb_ot_shape_planner_t *plan)
   map->add_gsub_pause (initial_reordering);
   for (; i < INDIC_BASIC_FEATURES; i++) {
     map->add_feature (indic_features[i].tag, 1, indic_features[i].flags | F_MANUAL_ZWJ | F_MANUAL_ZWNJ);
-    map->add_gsub_pause (NULL);
+    map->add_gsub_pause (nullptr);
   }
   map->add_gsub_pause (final_reordering);
   for (; i < INDIC_NUM_FEATURES; i++) {
@@ -533,7 +533,7 @@ data_create_indic (const hb_ot_shape_plan_t *plan)
 {
   indic_shape_plan_t *indic_plan = (indic_shape_plan_t *) calloc (1, sizeof (indic_shape_plan_t));
   if (unlikely (!indic_plan))
-    return NULL;
+    return nullptr;
 
   indic_plan->config = &indic_configs[0];
   for (unsigned int i = 1; i < ARRAY_LENGTH (indic_configs); i++)
@@ -691,6 +691,21 @@ initial_reordering_consonant_syllable (const hb_ot_shape_plan_t *plan,
   const indic_shape_plan_t *indic_plan = (const indic_shape_plan_t *) plan->data;
   hb_glyph_info_t *info = buffer->info;
 
+  /* https://github.com/behdad/harfbuzz/issues/435#issuecomment-335560167
+   * // For compatibility with legacy useage in Kannada,
+   * // Ra+h+ZWJ must behave like Ra+ZWJ+h...
+   */
+  if (buffer->props.script == HB_SCRIPT_KANNADA &&
+      start + 3 <= end &&
+      is_one_of (info[start  ], FLAG (OT_Ra)) &&
+      is_one_of (info[start+1], FLAG (OT_H)) &&
+      is_one_of (info[start+2], FLAG (OT_ZWJ)))
+  {
+    buffer->merge_clusters (start+1, start+3);
+    hb_glyph_info_t tmp = info[start+1];
+    info[start+1] = info[start+2];
+    info[start+2] = tmp;
+  }
 
   /* 1. Find base consonant:
    *
@@ -856,8 +871,8 @@ initial_reordering_consonant_syllable (const hb_ot_shape_plan_t *plan,
 
   /* 2. Decompose and reorder Matras:
    *
-   * Each matra and any syllable modifier sign in the cluster are moved to the
-   * appropriate position relative to the consonant(s) in the cluster. The
+   * Each matra and any syllable modifier sign in the syllable are moved to the
+   * appropriate position relative to the consonant(s) in the syllable. The
    * shaping engine decomposes two- or three-part matras into their constituent
    * parts before any repositioning. Matra characters are classified by which
    * consonant in a conjunct they have affinity for and are reordered to the
@@ -1283,7 +1298,7 @@ final_reordering_syllable (const hb_ot_shape_plan_t *plan,
 
 
   /* This function relies heavily on halant glyphs.  Lots of ligation
-   * and possibly multiplication substitutions happened prior to this
+   * and possibly multiple substitutions happened prior to this
    * phase, and that might have messed up our properties.  Recover
    * from a particular case of that where we're fairly sure that a
    * class of OT_H is desired but has been lost. */
@@ -1307,7 +1322,7 @@ final_reordering_syllable (const hb_ot_shape_plan_t *plan,
    * After the localized forms and basic shaping forms GSUB features have been
    * applied (see below), the shaping engine performs some final glyph
    * reordering before applying all the remaining font features to the entire
-   * cluster.
+   * syllable.
    */
 
   bool try_pref = !!indic_plan->mask_array[PREF];
@@ -1690,8 +1705,8 @@ final_reordering_syllable (const hb_ot_shape_plan_t *plan,
         break;
 
       default:
-	/* Uniscribe merges the entire cluster... Except for Tamil & Sinhala.
-	 * This means, half forms are submerged into the main consonants cluster.
+	/* Uniscribe merges the entire syllable into a single cluster... Except for Tamil & Sinhala.
+	 * This means, half forms are submerged into the main consonant's cluster.
 	 * This is unnecessary, and makes cursor positioning harder, but that's what
 	 * Uniscribe does. */
 	buffer->merge_clusters (start, end);
@@ -1833,14 +1848,14 @@ const hb_ot_complex_shaper_t _hb_ot_complex_shaper_indic =
   override_features_indic,
   data_create_indic,
   data_destroy_indic,
-  NULL, /* preprocess_text */
-  NULL, /* postprocess_glyphs */
+  nullptr, /* preprocess_text */
+  nullptr, /* postprocess_glyphs */
   HB_OT_SHAPE_NORMALIZATION_MODE_COMPOSED_DIACRITICS_NO_SHORT_CIRCUIT,
   decompose_indic,
   compose_indic,
   setup_masks_indic,
-  NULL, /* disable_otl */
-  NULL, /* reorder_marks */
+  nullptr, /* disable_otl */
+  nullptr, /* reorder_marks */
   HB_OT_SHAPE_ZERO_WIDTH_MARKS_NONE,
   false, /* fallback_position */
 };
