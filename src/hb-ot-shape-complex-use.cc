@@ -424,7 +424,7 @@ reorder_syllable (hb_buffer_t *buffer, unsigned int start, unsigned int end)
 {
   syllable_type_t syllable_type = (syllable_type_t) (buffer->info[start].syllable() & 0x0F);
   /* Only a few syllable types need reordering. */
-  if (unlikely (!(FLAG_SAFE (syllable_type) &
+  if (unlikely (!(FLAG_UNSAFE (syllable_type) &
 		  (FLAG (virama_terminated_cluster) |
 		   FLAG (standard_cluster) |
 		   FLAG (broken_cluster) |
@@ -595,7 +595,6 @@ compose_use (const hb_ot_shape_normalize_context_t *c,
 
 const hb_ot_complex_shaper_t _hb_ot_complex_shaper_use =
 {
-  "use",
   collect_features_use,
   nullptr, /* override_features */
   data_create_use,

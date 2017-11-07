@@ -24,13 +24,10 @@
  * Google Author(s): Behdad Esfahbod
  */
 
+#include "hb-private.hh"
+#include "hb-debug.hh"
 #include "hb-ot-shape-complex-arabic-private.hh"
 #include "hb-ot-shape-private.hh"
-
-
-#ifndef HB_DEBUG_ARABIC
-#define HB_DEBUG_ARABIC (HB_DEBUG+0)
-#endif
 
 
 /* buffer var allocations */
@@ -41,7 +38,7 @@
 /* See:
  * https://github.com/behdad/harfbuzz/commit/6e6f82b6f3dde0fc6c3c7d991d9ec6cfff57823d#commitcomment-14248516 */
 #define HB_ARABIC_GENERAL_CATEGORY_IS_WORD(gen_cat) \
-	(FLAG_SAFE (gen_cat) & \
+	(FLAG_UNSAFE (gen_cat) & \
 	 (FLAG (HB_UNICODE_GENERAL_CATEGORY_UNASSIGNED) | \
 	  FLAG (HB_UNICODE_GENERAL_CATEGORY_PRIVATE_USE) | \
 	  /*FLAG (HB_UNICODE_GENERAL_CATEGORY_LOWERCASE_LETTER) |*/ \
@@ -90,7 +87,7 @@ static unsigned int get_joining_type (hb_codepoint_t u, hb_unicode_general_categ
   if (likely (j_type != JOINING_TYPE_X))
     return j_type;
 
-  return (FLAG_SAFE(gen_cat) &
+  return (FLAG_UNSAFE(gen_cat) &
 	  (FLAG(HB_UNICODE_GENERAL_CATEGORY_NON_SPACING_MARK) |
 	   FLAG(HB_UNICODE_GENERAL_CATEGORY_ENCLOSING_MARK) |
 	   FLAG(HB_UNICODE_GENERAL_CATEGORY_FORMAT))
@@ -563,6 +560,7 @@ apply_stch (const hb_ot_shape_plan_t *plan,
       }
       else
       {
+	buffer->unsafe_to_break (context, end + 1);
 	hb_position_t x_offset = 0;
 	for (unsigned int k = end; k > start; k--)
 	{
@@ -689,7 +687,6 @@ reorder_marks_arabic (const hb_ot_shape_plan_t *plan,
 
 const hb_ot_complex_shaper_t _hb_ot_complex_shaper_arabic =
 {
-  "arabic",
   collect_features_arabic,
   nullptr, /* override_features */
   data_create_arabic,
