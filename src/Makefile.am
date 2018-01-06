@@ -134,7 +134,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = harfbuzz.pc
 EXTRA_DIST += harfbuzz.pc.in
 
-FUZZING_CPPFLAGS= \
+FUZZING_CPPFLAGS = \
 	-DHB_NDEBUG \
 	-DHB_MAX_NESTING_LEVEL=3 \
 	-DHB_SANITIZE_MAX_EDITS=3 \

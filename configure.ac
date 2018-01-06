@@ -1,6 +1,6 @@
 AC_PREREQ([2.64])
 AC_INIT([HarfBuzz],
-        [1.7.3],
+        [1.7.4],
         [https://github.com/harfbuzz/harfbuzz/issues/new],
         [harfbuzz],
         [http://harfbuzz.org/])
@@ -429,7 +429,7 @@ if test "x$with_coretext" = "xyes" -o "x$with_coretext" = "xauto"; then
 
 		if $have_coretext; then
 			CORETEXT_CFLAGS=
-			CORETEXT_LIBS="-framework CoreText -framework CoreGraphics"
+			CORETEXT_LIBS="-framework CoreText -framework CoreGraphics -framework CoreFoundation"
 			AC_SUBST(CORETEXT_CFLAGS)
 			AC_SUBST(CORETEXT_LIBS)
 		fi

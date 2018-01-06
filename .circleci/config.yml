@@ -7,20 +7,21 @@ jobs:
       - image: fedora
     steps:
       - checkout
-      - run: dnf install -y gcc ragel cmake make which glib2-devel freetype-devel cairo-devel libicu-devel graphite2-devel wget tar bzip2 || true
+      - run: dnf install -y gcc ragel cmake make which glib2-devel freetype-devel cairo-devel libicu-devel graphite2-devel wget tar bzip2 python || true
       - run: wget http://$ODSUSER:$ODSPASS@behdad.org/harfbuzz-private/OracleDeveloperStudio12.6-linux-x86-bin.tar.bz2 && tar xf OracleDeveloperStudio12.6-linux-x86-bin.tar.bz2 --owner root --group root --no-same-owner
       - run: CC=/root/project/OracleDeveloperStudio12.6-linux-x86-bin/developerstudio12.6/bin/suncc CXX=/root/project/OracleDeveloperStudio12.6-linux-x86-bin/developerstudio12.6/bin/sunCC cmake -DHB_HAVE_GRAPHITE2=ON -DHB_BUILTIN_UCDN=ON -DHB_HAVE_GLIB=ON -DHB_HAVE_ICU=ON -DHB_HAVE_FREETYPE=ON -Bbuild -H.
       - run: make -Cbuild
       - run: make -Cbuild test
       - run: make -Cbuild install
 
-  fedora:
+  fedora-out-of-tree:
     docker:
       - image: fedora
     steps:
       - checkout
       - run: dnf install -y pkg-config ragel gcc gcc-c++ automake autoconf libtool make which glib2-devel freetype-devel cairo-devel libicu-devel gobject-introspection-devel graphite2-devel redhat-rpm-config || true
-      - run: ./autogen.sh --with-freetype --with-glib --with-gobject --with-cairo --with-icu --with-graphite2 && make && make check
+      - run: NOCONFIGURE=1 ./autogen.sh --with-freetype --with-glib --with-gobject --with-cairo --with-icu --with-graphite2
+      - run: mkdir build && cd build && ../configure && make && make check
 
   archlinux:
     docker:
@@ -28,7 +29,8 @@ jobs:
     steps:
       - checkout
       - run: pacman --noconfirm -Syu freetype2 cairo icu gettext gobject-introspection gcc gcc-libs glib2 graphite pkg-config ragel
-      - run: ./autogen.sh --with-freetype --with-glib --with-gobject --with-cairo --with-icu --with-graphite2 && make && make check
+      - run: ./autogen.sh --with-freetype --with-glib --with-gobject --with-cairo --with-icu --with-graphite2
+      - run: make && make check
 
   freebsd9:
     docker:
@@ -36,7 +38,8 @@ jobs:
     steps:
       - checkout
       - run: apt update && apt install -y pkg-config ragel
-      - run: ./autogen.sh --prefix=/freebsd --host=x86_64-pc-freebsd9 && make
+      - run: ./autogen.sh --prefix=/freebsd --host=x86_64-pc-freebsd9
+      - run: make
 
   base:
     docker:
@@ -49,14 +52,14 @@ jobs:
       - run: ninja -Cbuild test
       - run: ninja -Cbuild install
 
-  distdir:
+  distcheck:
     docker:
       - image: dockcross/base
     steps:
       - checkout
       - run: apt update && apt install -y pkg-config ragel gtk-doc-tools libfreetype6-dev libglib2.0-dev libcairo2-dev libicu-dev libgraphite2-dev
-      - run: ./autogen.sh && make distdir
-      - run: cd harfbuzz-* && ./configure && make && make check && make install
+      - run: ./autogen.sh && make distcheck
+      - run: make distdir && cd harfbuzz-* && cmake -DDHB_CHECK=ON -Bbuild -H. -GNinja && ninja -Cbuild && CTEST_OUTPUT_ON_FAILURE=1 ninja -Cbuild test && ninja -Cbuild install
 
   psvita:
     docker:
@@ -65,7 +68,8 @@ jobs:
       - checkout
       - run: apt update && apt install ragel
       - run: git clone https://github.com/vitasdk/vdpm && cd vdpm && ./bootstrap-vitasdk.sh
-      - run: cmake -Bbuild -H. -GNinja -DCMAKE_TOOLCHAIN_FILE=/usr/local/vitasdk/share/vita.toolchain.cmake && ninja -Cbuild
+      - run: ./autogen.sh --prefix=/usr/local/vitasdk/arm-vita-eabi --host=arm-vita-eabi
+      - run: make
 
   android-arm:
     docker:
@@ -73,7 +77,8 @@ jobs:
     steps:
       - checkout
       - run: apt update && apt install ragel
-      - run: cmake -Bbuild -H. -GNinja && ninja -Cbuild
+      - run: cmake -Bbuild -H. -GNinja
+      - run: ninja -Cbuild
 
   browser-asmjs:
     docker:
@@ -81,7 +86,8 @@ jobs:
     steps:
       - checkout
       - run: apt update && apt install ragel
-      - run: cmake -Bbuild -H. -GNinja && ninja -Cbuild
+      - run: cmake -Bbuild -H. -GNinja
+      - run: ninja -Cbuild
 
   linux-arm64:
     docker:
@@ -89,7 +95,8 @@ jobs:
     steps:
       - checkout
       - run: apt update && apt install ragel
-      - run: cmake -Bbuild -H. -GNinja && ninja -Cbuild
+      - run: cmake -Bbuild -H. -GNinja
+      - run: ninja -Cbuild
 
   linux-mips:
     docker:
@@ -97,7 +104,8 @@ jobs:
     steps:
       - checkout
       - run: apt update && apt install ragel
-      - run: cmake -Bbuild -H. -GNinja && ninja -Cbuild
+      - run: cmake -Bbuild -H. -GNinja
+      - run: ninja -Cbuild
 
   windows-x64:
     docker:
@@ -105,21 +113,42 @@ jobs:
     steps:
       - checkout
       - run: apt update && apt install ragel
-      - run: cmake -Bbuild -H. -GNinja && ninja -Cbuild
+      - run: cmake -Bbuild -H. -GNinja
+      - run: ninja -Cbuild
+
+  alpine:
+    docker:
+      - image: alpine
+    steps:
+      - checkout
+      - run: apk update && apk add ragel make pkgconfig libtool autoconf automake gettext gcc g++ glib-dev freetype-dev cairo-dev
+      - run: ./autogen.sh
+      - run: make && make check
+
+  dos:
+    docker:
+      - image: quay.io/ebraminio/djgpp
+    steps:
+      - checkout
+      - run: apt update && apt install -y ragel pkg-config libtool autoconf
+      - run: CFLAGS="-Wno-attributes" CXXFLAGS="-Wno-attributes" ./autogen.sh --prefix=/usr/local/djgpp --host=i586-pc-msdosdjgpp
+      - run: make
 
 workflows:
   version: 2
   build:
     jobs:
       - oracledeveloperstudio
-      - fedora
+      - fedora-out-of-tree
       - archlinux
       - freebsd9
       - base
-      - distdir
+      - distcheck
       - psvita
       - android-arm
       - browser-asmjs
       - linux-arm64
       - linux-mips
       - windows-x64
+      - alpine
+      - dos
