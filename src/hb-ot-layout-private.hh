@@ -90,12 +90,12 @@ hb_ot_layout_substitute_start (hb_font_t    *font,
 struct hb_ot_layout_lookup_accelerator_t;
 
 namespace OT {
-  struct hb_apply_context_t;
+  struct hb_ot_apply_context_t;
   struct SubstLookup;
 }
 
 HB_INTERNAL void
-hb_ot_layout_substitute_lookup (OT::hb_apply_context_t *c,
+hb_ot_layout_substitute_lookup (OT::hb_ot_apply_context_t *c,
 				const OT::SubstLookup &lookup,
 				const hb_ot_layout_lookup_accelerator_t &accel);
 
@@ -122,12 +122,22 @@ hb_ot_layout_position_finish_offsets (hb_font_t    *font,
  */
 
 namespace OT {
+  struct BASE;
+  struct COLR;
+  struct CPAL;
   struct GDEF;
   struct GSUB;
   struct GPOS;
   struct MATH;
   struct fvar;
   struct avar;
+}
+
+namespace AAT {
+  struct ankr;
+  struct kerx;
+  struct morx;
+  struct trak;
 }
 
 struct hb_ot_layout_lookup_accelerator_t
@@ -162,9 +172,16 @@ struct hb_ot_layout_t
   const struct OT::GPOS *gpos;
 
   /* TODO Move the following out of this struct. */
+  OT::hb_lazy_table_loader_t<struct OT::BASE> base;
+  OT::hb_lazy_table_loader_t<struct OT::COLR> colr;
+  OT::hb_lazy_table_loader_t<struct OT::CPAL> cpal;
   OT::hb_lazy_table_loader_t<struct OT::MATH> math;
   OT::hb_lazy_table_loader_t<struct OT::fvar> fvar;
   OT::hb_lazy_table_loader_t<struct OT::avar> avar;
+  OT::hb_lazy_table_loader_t<struct AAT::ankr> ankr;
+  OT::hb_lazy_table_loader_t<struct AAT::kerx> kerx;
+  OT::hb_lazy_table_loader_t<struct AAT::morx> morx;
+  OT::hb_lazy_table_loader_t<struct AAT::trak> trak;
 
   unsigned int gsub_lookup_count;
   unsigned int gpos_lookup_count;
@@ -353,6 +370,28 @@ _hb_glyph_info_get_modified_combining_class (const hb_glyph_info_t *info)
 {
   return _hb_glyph_info_is_unicode_mark (info) ? info->unicode_props()>>8 : 0;
 }
+
+
+/* Loop over grapheme. Based on foreach_cluster(). */
+#define foreach_grapheme(buffer, start, end) \
+  for (unsigned int \
+       _count = buffer->len, \
+       start = 0, end = _count ? _next_grapheme (buffer, 0) : 0; \
+       start < _count; \
+       start = end, end = _next_grapheme (buffer, start))
+
+static inline unsigned int
+_next_grapheme (hb_buffer_t *buffer, unsigned int start)
+{
+  hb_glyph_info_t *info = buffer->info;
+  unsigned int count = buffer->len;
+
+  while (++start < count && _hb_glyph_info_is_unicode_mark (&info[start]))
+    ;
+
+  return start;
+}
+
 
 #define info_cc(info) (_hb_glyph_info_get_modified_combining_class (&(info)))
 

@@ -56,10 +56,10 @@ struct postV2Tail
     return_trace (glyphNameIndex.sanitize (c));
   }
 
-  ArrayOf<UINT16>glyphNameIndex;	/* This is not an offset, but is the
+  ArrayOf<HBUINT16>glyphNameIndex;	/* This is not an offset, but is the
 					 * ordinal number of the glyph in 'post'
 					 * string tables. */
-  UINT8		namesX[VAR];		/* Glyph names with length bytes [variable]
+  HBUINT8		namesX[VAR];		/* Glyph names with length bytes [variable]
 					 * (a Pascal string). */
 
   DEFINE_SIZE_ARRAY2 (2, glyphNameIndex, namesX);
@@ -82,11 +82,33 @@ struct post
     return_trace (true);
   }
 
+  inline bool subset (hb_subset_plan_t *plan) const
+  {
+    unsigned int post_prime_length;
+    hb_blob_t *post_blob = OT::Sanitizer<post>().sanitize (hb_face_reference_table (plan->source, HB_OT_TAG_post));
+    hb_blob_t *post_prime_blob = hb_blob_create_sub_blob (post_blob, 0, post::static_size);
+    post *post_prime = (post *) hb_blob_get_data_writable (post_prime_blob, &post_prime_length);
+    hb_blob_destroy (post_blob);
+
+    if (unlikely (!post_prime || post_prime_length != post::static_size))
+    {
+      hb_blob_destroy (post_prime_blob);
+      DEBUG_MSG(SUBSET, nullptr, "Invalid source post table with length %d.", post_prime_length);
+      return false;
+    }
+
+    post_prime->version.major.set (3); // Version 3 does not have any glyph names.
+    bool result = hb_subset_plan_add_table (plan, HB_OT_TAG_post, post_prime_blob);
+    hb_blob_destroy (post_prime_blob);
+
+    return result;
+  }
+
   struct accelerator_t
   {
     inline void init (hb_face_t *face)
     {
-      blob = Sanitizer<post>::sanitize (face->reference_table (HB_OT_TAG_post));
+      blob = Sanitizer<post>().sanitize (face->reference_table (HB_OT_TAG_post));
       const post *table = Sanitizer<post>::lock_instance (blob);
       unsigned int table_length = hb_blob_get_length (blob);
 
@@ -234,7 +256,7 @@ struct post
     private:
     hb_blob_t *blob;
     uint32_t version;
-    const ArrayOf<UINT16> *glyphNameIndex;
+    const ArrayOf<HBUINT16> *glyphNameIndex;
     hb_prealloced_array_t<uint32_t, 1> index_to_offset;
     const uint8_t *pool;
     mutable uint16_t *gids_sorted_by_name;
@@ -261,16 +283,16 @@ struct post
 					 * from the value of this field. */
   FWORD		underlineThickness;	/* Suggested values for the underline
 					   thickness. */
-  UINT32		isFixedPitch;		/* Set to 0 if the font is proportionally
+  HBUINT32	isFixedPitch;		/* Set to 0 if the font is proportionally
 					 * spaced, non-zero if the font is not
 					 * proportionally spaced (i.e. monospaced). */
-  UINT32		minMemType42;		/* Minimum memory usage when an OpenType font
+  HBUINT32	minMemType42;		/* Minimum memory usage when an OpenType font
 					 * is downloaded. */
-  UINT32		maxMemType42;		/* Maximum memory usage when an OpenType font
+  HBUINT32	maxMemType42;		/* Maximum memory usage when an OpenType font
 					 * is downloaded. */
-  UINT32		minMemType1;		/* Minimum memory usage when an OpenType font
+  HBUINT32	minMemType1;		/* Minimum memory usage when an OpenType font
 					 * is downloaded as a Type 1 font. */
-  UINT32		maxMemType1;		/* Maximum memory usage when an OpenType font
+  HBUINT32	maxMemType1;		/* Maximum memory usage when an OpenType font
 					 * is downloaded as a Type 1 font. */
 /*postV2Tail	v2[VAR];*/
   DEFINE_SIZE_STATIC (32);
