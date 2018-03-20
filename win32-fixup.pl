@@ -5,11 +5,11 @@ require "../local-paths.lib";
 
 $api_version = "1.0";
 $pango_current_minus_age = 0;
-$harfbuzz_version = "1.7.03";
+$harfbuzz_version = "1.7.06";
 $major = 1;
 $minor = 7;
-$micro = 3;
-$interface_age = 3;
+$micro = 6;
+$interface_age = 6;
 $current_minus_age = 0;
 $exec_prefix = "lib";
 
@@ -52,7 +52,6 @@ sub process_file
 	}
 }
 
-process_file ("src/hb-version.h");
 process_file ("src/harfbuzz.pc");
 
 my $command=join(' ',@ARGV);
