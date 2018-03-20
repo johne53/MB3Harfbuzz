@@ -253,6 +253,10 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
 			>
 			<File
+				RelativePath="..\src\hb-aat-layout.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\hb-blob.cc"
 				>
 				<FileConfiguration
@@ -312,6 +316,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\hb-ot-color.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\hb-ot-font.cc"
 				>
 			</File>
@@ -349,6 +357,10 @@
 			</File>
 			<File
 				RelativePath="..\src\hb-ot-shape-complex-indic.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\hb-ot-shape-complex-khmer.cc"
 				>
 			</File>
 			<File
