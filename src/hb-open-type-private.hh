@@ -29,6 +29,10 @@
 #ifndef HB_OPEN_TYPE_PRIVATE_HH
 #define HB_OPEN_TYPE_PRIVATE_HH
 
+#if defined(_MSC_VER) && (_MSC_VER < 1800)
+#define round(x) floor(x + 0.5) // Added by JE - 20-03-2018 (MSVC didn't support round() until VS2013 !!!!)
+#endif
+
 #include "hb-private.hh"
 #include "hb-debug.hh"
 #include "hb-face-private.hh"
