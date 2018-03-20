@@ -178,8 +178,8 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description="Copy all &apos;machine.hh&apos; file(s)"
-				CommandLine="copy /Y &quot;..\src\hb-ot-shape-complex-indic-machine.hh.win32-msvc&quot; &quot;..\src\hb-ot-shape-complex-indic-machine.hh&quot;&#x0D;&#x0A;copy /Y &quot;..\src\hb-ot-shape-complex-myanmar-machine.hh.win32-msvc&quot; &quot;..\src\hb-ot-shape-complex-myanmar-machine.hh&quot;&#x0D;&#x0A;copy /Y &quot;..\src\hb-ot-shape-complex-use-machine.hh.win32-msvc&quot; &quot;..\src\hb-ot-shape-complex-use-machine.hh&quot;&#x0D;&#x0A;"
+				Description=""
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
