@@ -241,6 +241,9 @@ static int errno = 0; /* Use something better? */
 #    define HB_USE_ATEXIT 1
 #  endif
 #endif
+#ifdef HB_NO_ATEXIT
+#  undef HB_USE_ATEXIT
+#endif
 
 /* Basics */
 
@@ -414,7 +417,7 @@ _hb_bit_storage (T v)
   if (sizeof (T) <= 8)
   {
     /* "bithacks" */
-    const uint64_t b[] = {0x2, 0xC, 0xF0, 0xFF00, 0xFFFF0000, 0xFFFFFFFF00000000};
+    const uint64_t b[] = {0x2ULL, 0xCULL, 0xF0ULL, 0xFF00ULL, 0xFFFF0000ULL, 0xFFFFFFFF00000000ULL};
     const unsigned int S[] = {1, 2, 4, 8, 16, 32};
     unsigned int r = 0;
     for (int i = 5; i >= 0; i--)
@@ -489,12 +492,12 @@ _hb_ctz (T v)
     unsigned int c = 64;
     v &= - (int64_t) (v);
     if (v) c--;
-    if (v & 0x00000000FFFFFFFF) c -= 32;
-    if (v & 0x0000FFFF0000FFFF) c -= 16;
-    if (v & 0x00FF00FF00FF00FF) c -= 8;
-    if (v & 0x0F0F0F0F0F0F0F0F) c -= 4;
-    if (v & 0x3333333333333333) c -= 2;
-    if (v & 0x5555555555555555) c -= 1;
+    if (v & 0x00000000FFFFFFFFULL) c -= 32;
+    if (v & 0x0000FFFF0000FFFFULL) c -= 16;
+    if (v & 0x00FF00FF00FF00FFULL) c -= 8;
+    if (v & 0x0F0F0F0F0F0F0F0FULL) c -= 4;
+    if (v & 0x3333333333333333ULL) c -= 2;
+    if (v & 0x5555555555555555ULL) c -= 1;
     return c;
   }
   if (sizeof (T) == 16)
@@ -1068,6 +1071,19 @@ struct hb_string_t
   const char *bytes;
   unsigned int len;
 };
+
+
+/* fallback for round() */
+#if !defined (HAVE_ROUND) && !defined (HAVE_DECL_ROUND)
+static inline double
+round (double x)
+{
+  if (x >= 0)
+    return floor (x + 0.5);
+  else
+    return ceil (x - 0.5);
+}
+#endif
 
 
 #endif /* HB_PRIVATE_HH */
