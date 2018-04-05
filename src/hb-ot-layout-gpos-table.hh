@@ -29,10 +29,6 @@
 #ifndef HB_OT_LAYOUT_GPOS_TABLE_HH
 #define HB_OT_LAYOUT_GPOS_TABLE_HH
 
-#if defined(_MSC_VER) && (_MSC_VER < 1800)
-#define round(x) floor(x + 0.5) // Added by JE - 20-03-2018 (MSVC didn't support round() until VS2013 !!!!)
-#endif
-
 #include "hb-ot-layout-gsubgpos-private.hh"
 
 
