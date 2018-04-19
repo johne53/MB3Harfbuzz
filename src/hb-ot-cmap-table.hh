@@ -30,14 +30,14 @@
 #include "hb-open-type-private.hh"
 #include "hb-subset-plan.hh"
 
-namespace OT {
-
-
 /*
- * cmap -- Character To Glyph Index Mapping Table
+ * cmap -- Character to Glyph Index Mapping
+ * https://docs.microsoft.com/en-us/typography/opentype/spec/cmap
  */
-
 #define HB_OT_TAG_cmap HB_TAG('c','m','a','p')
+
+
+namespace OT {
 
 
 struct CmapSubtableFormat0
@@ -127,6 +127,17 @@ struct CmapSubtableFormat4
       return true;
     }
 
+    static inline void get_all_codepoints_func (const void *obj, hb_set_t *out)
+    {
+      const accelerator_t *thiz = (const accelerator_t *) obj;
+      for (unsigned int i = 0; i < thiz->segCount; i++)
+      {
+	if (thiz->startCount[i] != 0xFFFFu
+	    || thiz->endCount[i] != 0xFFFFu) // Skip the last segment (0xFFFF)
+	  hb_set_add_range (out, thiz->startCount[i], thiz->endCount[i]);
+      }
+    }
+
     const HBUINT16 *endCount;
     const HBUINT16 *startCount;
     const HBUINT16 *idDelta;
@@ -193,6 +204,8 @@ struct CmapSubtableLongGroup
 {
   friend struct CmapSubtableFormat12;
   friend struct CmapSubtableFormat13;
+  template<typename U>
+  friend struct CmapSubtableLongSegmented;
   friend struct cmap;
 
   int cmp (hb_codepoint_t codepoint) const
@@ -265,6 +278,15 @@ struct CmapSubtableLongSegmented
     return true;
   }
 
+  inline void get_all_codepoints (hb_set_t *out) const
+  {
+    for (unsigned int i = 0; i < this->groups.len; i++) {
+      hb_set_add_range (out,
+			this->groups[i].startCharCode,
+			this->groups[i].endCharCode);
+    }
+  }
+
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
@@ -284,8 +306,8 @@ struct CmapSubtableLongSegmented
   protected:
   HBUINT16	format;		/* Subtable format; set to 12. */
   HBUINT16	reservedZ;	/* Reserved; set to 0. */
-  HBUINT32		lengthZ;	/* Byte length of this subtable. */
-  HBUINT32		languageZ;	/* Ignore. */
+  HBUINT32	lengthZ;	/* Byte length of this subtable. */
+  HBUINT32	languageZ;	/* Ignore. */
   SortedArrayOf<CmapSubtableLongGroup, HBUINT32>
 		groups;		/* Groupings. */
   public:
@@ -328,7 +350,7 @@ struct UnicodeValueRange
     return_trace (c->check_struct (this));
   }
 
-  UINT24	startUnicodeValue;	/* First value in this range. */
+  HBUINT24	startUnicodeValue;	/* First value in this range. */
   HBUINT8		additionalCount;	/* Number of additional values in this
 					 * range. */
   public:
@@ -350,7 +372,7 @@ struct UVSMapping
     return_trace (c->check_struct (this));
   }
 
-  UINT24	unicodeValue;	/* Base Unicode value of the UVS */
+  HBUINT24	unicodeValue;	/* Base Unicode value of the UVS */
   GlyphID	glyphID;	/* Glyph ID of the UVS */
   public:
   DEFINE_SIZE_STATIC (5);
@@ -392,7 +414,7 @@ struct VariationSelectorRecord
 		  nonDefaultUVS.sanitize (c, base));
   }
 
-  UINT24	varSelector;	/* Variation selector. */
+  HBUINT24	varSelector;	/* Variation selector. */
   LOffsetTo<DefaultUVS>
 		defaultUVS;	/* Offset to Default UVS Table. May be 0. */
   LOffsetTo<NonDefaultUVS>
@@ -667,20 +689,30 @@ struct cmap
 
       this->get_glyph_data = subtable;
       if (unlikely (symbol))
+      {
 	this->get_glyph_func = get_glyph_from_symbol<OT::CmapSubtable>;
-      else
+	this->get_all_codepoints_func = null_get_all_codepoints_func;
+      } else {
 	switch (subtable->u.format) {
 	/* Accelerate format 4 and format 12. */
-	default: this->get_glyph_func = get_glyph_from<OT::CmapSubtable>;		break;
-	case 12: this->get_glyph_func = get_glyph_from<OT::CmapSubtableFormat12>;	break;
+	default:
+	  this->get_glyph_func = get_glyph_from<OT::CmapSubtable>;
+	  this->get_all_codepoints_func = null_get_all_codepoints_func;
+	  break;
+	case 12:
+	  this->get_glyph_func = get_glyph_from<OT::CmapSubtableFormat12>;
+	  this->get_all_codepoints_func = get_all_codepoints_from<OT::CmapSubtableFormat12>;
+	  break;
 	case  4:
 	  {
 	    this->format4_accel.init (&subtable->u.format4);
 	    this->get_glyph_data = &this->format4_accel;
 	    this->get_glyph_func = this->format4_accel.get_glyph_func;
+	    this->get_all_codepoints_func = this->format4_accel.get_all_codepoints_func;
 	  }
 	  break;
 	}
+      }
     }
 
     inline void fini (void)
@@ -710,10 +742,22 @@ struct cmap
       return get_nominal_glyph (unicode, glyph);
     }
 
+    inline void get_all_codepoints (hb_set_t *out) const
+    {
+      this->get_all_codepoints_func (get_glyph_data, out);
+    }
+
     protected:
     typedef bool (*hb_cmap_get_glyph_func_t) (const void *obj,
 					      hb_codepoint_t codepoint,
 					      hb_codepoint_t *glyph);
+    typedef void (*hb_cmap_get_all_codepoints_func_t) (const void *obj,
+						       hb_set_t *out);
+
+    static inline void null_get_all_codepoints_func (const void *obj, hb_set_t *out)
+    {
+      // NOOP
+    }
 
     template <typename Type>
     static inline bool get_glyph_from (const void *obj,
@@ -722,6 +766,14 @@ struct cmap
     {
       const Type *typed_obj = (const Type *) obj;
       return typed_obj->get_glyph (codepoint, glyph);
+    }
+
+    template <typename Type>
+    static inline void get_all_codepoints_from (const void *obj,
+						hb_set_t *out)
+    {
+      const Type *typed_obj = (const Type *) obj;
+      typed_obj->get_all_codepoints (out);
     }
 
     template <typename Type>
@@ -738,7 +790,7 @@ struct cmap
 	/* For symbol-encoded OpenType fonts, we duplicate the
 	 * U+F000..F0FF range at U+0000..U+00FF.  That's what
 	 * Windows seems to do, and that's hinted about at:
-	 * http://www.microsoft.com/typography/otspec/recom.htm
+	 * https://docs.microsoft.com/en-us/typography/opentype/spec/recom
 	 * under "Non-Standard (Symbol) Fonts". */
 	return typed_obj->get_glyph (0xF000u + codepoint, glyph);
       }
@@ -749,6 +801,8 @@ struct cmap
     private:
     hb_cmap_get_glyph_func_t get_glyph_func;
     const void *get_glyph_data;
+    hb_cmap_get_all_codepoints_func_t get_all_codepoints_func;
+
     OT::CmapSubtableFormat4::accelerator_t format4_accel;
 
     const OT::CmapSubtableFormat14 *uvs_table;

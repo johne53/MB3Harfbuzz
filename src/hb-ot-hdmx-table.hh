@@ -28,15 +28,17 @@
 #define HB_OT_HDMX_TABLE_HH
 
 #include "hb-open-type-private.hh"
+#include "hb-subset-plan.hh"
+
+/*
+ * hdmx -- Horizontal Device Metrics
+ * https://docs.microsoft.com/en-us/typography/opentype/spec/hdmx
+ */
+#define HB_OT_TAG_hdmx HB_TAG('h','d','m','x')
+
 
 namespace OT {
 
-
-/*
- * hdmx - Horizontal Device Metric
- */
-
-#define HB_OT_TAG_hdmx HB_TAG('h','d','m','x')
 
 struct DeviceRecord
 {

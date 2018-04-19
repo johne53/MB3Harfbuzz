@@ -168,6 +168,10 @@ create_ct_font (CGFontRef cg_font, CGFloat font_size)
   if (CFStringHasPrefix (cg_postscript_name, CFSTR (".SFNSText")) ||
       CFStringHasPrefix (cg_postscript_name, CFSTR (".SFNSDisplay")))
   {
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1080
+# define kCTFontUIFontSystem kCTFontSystemFontType
+# define kCTFontUIFontEmphasizedSystem kCTFontEmphasizedSystemFontType
+#endif
     CTFontUIFontType font_type = kCTFontUIFontSystem;
     if (CFStringHasSuffix (cg_postscript_name, CFSTR ("-Bold")))
       font_type = kCTFontUIFontEmphasizedSystem;
@@ -206,7 +210,18 @@ create_ct_font (CGFontRef cg_font, CGFloat font_size)
       return ct_font;
   }
 
-  CFURLRef original_url = (CFURLRef)CTFontCopyAttribute(ct_font, kCTFontURLAttribute);
+  CFURLRef original_url = NULL;
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1060
+  ATSFontRef atsFont;
+  FSRef fsref;
+  OSStatus status;
+  atsFont = CTFontGetPlatformFont (ct_font, NULL);
+  status = ATSFontGetFileReference (atsFont, &fsref);
+  if (status == noErr)
+    original_url = CFURLCreateFromFSRef (NULL, &fsref);
+#else
+  original_url = (CFURLRef) CTFontCopyAttribute (ct_font, kCTFontURLAttribute);
+#endif
 
   /* Create font copy with cascade list that has LastResort first; this speeds up CoreText
    * font fallback which we don't need anyway. */
@@ -225,7 +240,15 @@ create_ct_font (CGFontRef cg_font, CGFloat font_size)
        * system locations that we cannot access from the sandboxed renderer
        * process in Blink. This can be detected by the new file URL location
        * that the newly found font points to. */
-      CFURLRef new_url = (CFURLRef) CTFontCopyAttribute (new_ct_font, kCTFontURLAttribute);
+      CFURLRef new_url = NULL;
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1060
+      atsFont = CTFontGetPlatformFont (new_ct_font, NULL);
+      status = ATSFontGetFileReference (atsFont, &fsref);
+      if (status == noErr)
+        new_url = CFURLCreateFromFSRef (NULL, &fsref);
+#else
+      new_url = (CFURLRef) CTFontCopyAttribute (new_ct_font, kCTFontURLAttribute);
+#endif
       // Keep reconfigured font if URL cannot be retrieved (seems to be the case
       // on Mac OS 10.12 Sierra), speculative fix for crbug.com/625606
       if (!original_url || !new_url || CFEqual (original_url, new_url)) {
@@ -944,6 +967,9 @@ resize_and_retry:
 
       int level = HB_DIRECTION_IS_FORWARD (buffer->props.direction) ? 0 : 1;
       CFNumberRef level_number = CFNumberCreate (kCFAllocatorDefault, kCFNumberIntType, &level);
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1060
+      extern const CFStringRef kCTTypesetterOptionForcedEmbeddingLevel;
+#endif
       CFDictionaryRef options = CFDictionaryCreate (kCFAllocatorDefault,
 						    (const void **) &kCTTypesetterOptionForcedEmbeddingLevel,
 						    (const void **) &level_number,
@@ -979,7 +1005,7 @@ resize_and_retry:
     /* For right-to-left runs, CoreText returns the glyphs positioned such that
      * any trailing whitespace is to the left of (0,0).  Adjust coordinate system
      * to fix for that.  Test with any RTL string with trailing spaces.
-     * https://code.google.com/p/chromium/issues/detail?id=469028
+     * https://crbug.com/469028
      */
     if (HB_DIRECTION_IS_BACKWARD (buffer->props.direction))
     {
@@ -1032,7 +1058,7 @@ resize_and_retry:
 	 * However, even that wouldn't work if we were passed in the CGFont to
 	 * construct a hb_face to begin with.
 	 *
-	 * See: http://github.com/harfbuzz/harfbuzz/pull/36
+	 * See: https://github.com/harfbuzz/harfbuzz/pull/36
 	 *
 	 * Also see: https://bugs.chromium.org/p/chromium/issues/detail?id=597098
 	 */
@@ -1222,7 +1248,7 @@ resize_and_retry:
      * directions.  As such, disable the assert...  It wouldn't crash, but
      * cursoring will be off...
      *
-     * http://crbug.com/419769
+     * https://crbug.com/419769
      */
     if (0)
     {

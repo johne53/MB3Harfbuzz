@@ -29,7 +29,12 @@
 
 #include "hb-open-type-private.hh"
 #include "hb-aat-layout-common-private.hh"
+#include "hb-ot-layout-common-private.hh"
 
+/*
+ * morx -- Extended Glyph Metamorphosis
+ * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6morx.html
+ */
 #define HB_AAT_TAG_morx HB_TAG('m','o','r','x')
 
 
@@ -302,9 +307,10 @@ struct ContextualSubtable
   }
 
   protected:
-  StateTable<EntryData>	machine;
-  OffsetTo<UnsizedOffsetListOf<Lookup<GlyphID>, HBUINT32>, HBUINT32>
-			substitutionTables;
+  StateTable<EntryData>
+		machine;
+  LOffsetTo<UnsizedOffsetListOf<Lookup<GlyphID>, HBUINT32> >
+		substitutionTables;
   public:
   DEFINE_SIZE_STATIC (20);
 };
@@ -461,12 +467,13 @@ struct LigatureSubtable
   }
 
   protected:
-  StateTable<EntryData>	machine;
-  OffsetTo<UnsizedArrayOf<HBUINT32>, HBUINT32>
+  StateTable<EntryData>
+		machine;
+  LOffsetTo<UnsizedArrayOf<HBUINT32> >
 		ligAction;	/* Offset to the ligature action table. */
-  OffsetTo<UnsizedArrayOf<HBUINT16>, HBUINT32>
+  LOffsetTo<UnsizedArrayOf<HBUINT16> >
 		component;	/* Offset to the component table. */
-  OffsetTo<UnsizedArrayOf<GlyphID>, HBUINT32>
+  LOffsetTo<UnsizedArrayOf<GlyphID> >
 		ligature;	/* Offset to the actual ligature lists. */
   public:
   DEFINE_SIZE_STATIC (28);

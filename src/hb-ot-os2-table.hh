@@ -29,14 +29,14 @@
 
 #include "hb-open-type-private.hh"
 #include "hb-ot-os2-unicode-ranges.hh"
+#include "hb-subset-plan.hh"
 
 namespace OT {
 
 /*
  * OS/2 and Windows Metrics
- * http://www.microsoft.com/typography/otspec/os2.htm
+ * https://docs.microsoft.com/en-us/typography/opentype/spec/os2
  */
-
 #define HB_OT_TAG_os2 HB_TAG('O','S','/','2')
 
 struct os2
@@ -123,6 +123,24 @@ struct os2
 
     *min_cp = min;
     *max_cp = max;
+  }
+
+  enum font_page_t {
+    HEBREW_FONT_PAGE		= 0xB100, // Hebrew Windows 3.1 font page
+    SIMP_ARABIC_FONT_PAGE	= 0xB200, // Simplified Arabic Windows 3.1 font page
+    TRAD_ARABIC_FONT_PAGE	= 0xB300, // Traditional Arabic Windows 3.1 font page
+    OEM_ARABIC_FONT_PAGE	= 0xB400, // OEM Arabic Windows 3.1 font page
+    SIMP_FARSI_FONT_PAGE	= 0xBA00, // Simplified Farsi Windows 3.1 font page
+    TRAD_FARSI_FONT_PAGE	= 0xBB00, // Traditional Farsi Windows 3.1 font page
+    THAI_FONT_PAGE		= 0xDE00  // Thai Windows 3.1 font page
+  };
+
+  // https://github.com/Microsoft/Font-Validator/blob/520aaae/OTFontFileVal/val_OS2.cs#L644-L681
+  inline font_page_t get_font_page () const
+  {
+    if (version != 0)
+      return (font_page_t) 0;
+    return (font_page_t) (fsSelection & 0xFF00);
   }
 
   public:

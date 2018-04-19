@@ -29,6 +29,7 @@
 
 #include "hb-open-type-private.hh"
 #include "hb-dsalgs.hh"
+#include "hb-subset-plan.hh"
 
 #define HB_STRING_ARRAY_NAME format1_names
 #define HB_STRING_ARRAY_LIST "hb-ot-post-macroman.hh"
@@ -38,14 +39,14 @@
 
 #define NUM_FORMAT1_NAMES 258
 
-namespace OT {
-
-
 /*
  * post -- PostScript
+ * https://docs.microsoft.com/en-us/typography/opentype/spec/post
  */
-
 #define HB_OT_TAG_post HB_TAG('p','o','s','t')
+
+
+namespace OT {
 
 
 struct postV2Tail

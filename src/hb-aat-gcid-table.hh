@@ -27,15 +27,15 @@
 
 #include "hb-aat-layout-common-private.hh"
 
+/*
+ * gcid -- Glyphs CIDs
+ * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6gcid.html
+ */
 #define HB_AAT_TAG_gcid HB_TAG('g','c','i','d')
 
 
 namespace AAT {
 
-/*
- * gcid -- Glyphs CIDs
- * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6gcid.html
- */
 
 struct gcid
 {
@@ -44,7 +44,7 @@ struct gcid
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
-    return_trace (c->check_struct (this) && CIDs.sanitize (c));
+    return_trace (likely (c->check_struct (this) && CIDs.sanitize (c)));
   }
 
   protected:
@@ -52,10 +52,10 @@ struct gcid
   HBUINT16	format;		/* Data format (set to 0) */
   HBUINT32	size;		/* Size of the table, including header */
   HBUINT16	registry;	/* The registry ID */
-  uint8_t	registryName[64];
+  HBUINT8	registryName[64];
 				/* The registry name in ASCII */
   HBUINT16	order;		/* The order ID */
-  uint8_t	orderName[64];	/* The order name in ASCII */
+  HBUINT8	orderName[64];	/* The order name in ASCII */
   HBUINT16	supplementVersion;
 				/* The supplement version */
   ArrayOf<HBUINT16>

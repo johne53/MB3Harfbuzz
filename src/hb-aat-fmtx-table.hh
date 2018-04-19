@@ -27,16 +27,15 @@
 
 #include "hb-aat-layout-common-private.hh"
 
+/*
+ * fmtx -- Font Metrics
+ * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6fmtx.html
+ */
 #define HB_AAT_TAG_fmtx HB_TAG('f','m','t','x')
 
 
 namespace AAT {
 
-
-/*
- * fmtx -- Font metrics
- * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6fmtx.html
- */
 
 struct fmtx
 {
@@ -45,7 +44,7 @@ struct fmtx
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
-    return_trace (c->check_struct (this));
+    return_trace (likely (c->check_struct (this)));
   }
 
   FixedVersion<>version;		/* Version (set to 0x00020000). */

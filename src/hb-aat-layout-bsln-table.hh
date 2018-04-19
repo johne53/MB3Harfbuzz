@@ -27,17 +27,22 @@
 
 #include "hb-aat-layout-common-private.hh"
 
+/*
+ * bsln -- Baseline
+ * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6bsln.html
+ */
 #define HB_AAT_TAG_bsln HB_TAG('b','s','l','n')
 
 
 namespace AAT {
+
 
 struct BaselineTableFormat0Part
 {
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
-    return_trace (c->check_struct (this));
+    return_trace (likely (c->check_struct (this)));
   }
 
   protected:
@@ -55,7 +60,8 @@ struct BaselineTableFormat1Part
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
-    return_trace (c->check_struct (this) && lookupTable.sanitize (c));
+    return_trace (likely (c->check_struct (this) &&
+			  lookupTable.sanitize (c)));
   }
 
   protected:
@@ -72,7 +78,7 @@ struct BaselineTableFormat2Part
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
-    return_trace (c->check_struct (this));
+    return_trace (likely (c->check_struct (this)));
   }
 
   protected:
@@ -108,11 +114,6 @@ struct BaselineTableFormat3Part
   DEFINE_SIZE_MIN (68);
 };
 
-/*
- * bsln -- Baseline table
- * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6bsln.html
- */
-
 struct bsln
 {
   static const hb_tag_t tableTag = HB_AAT_TAG_bsln;
@@ -120,7 +121,7 @@ struct bsln
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
-    if (!(c->check_struct (this) && defaultBaseline < 32))
+    if (unlikely (!(c->check_struct (this) && defaultBaseline < 32)))
       return_trace (false);
 
     switch (format) {

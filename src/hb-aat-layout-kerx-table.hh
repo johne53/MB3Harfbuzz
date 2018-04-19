@@ -31,6 +31,10 @@
 #include "hb-open-type-private.hh"
 #include "hb-aat-layout-common-private.hh"
 
+/*
+ * kerx -- Extended Kerning
+ * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6kerx.html
+ */
 #define HB_AAT_TAG_kerx HB_TAG('k','e','r','x')
 
 
@@ -71,21 +75,22 @@ struct KerxSubTableFormat0
   {
     TRACE_SANITIZE (this);
     return_trace (c->check_struct (this) &&
-      c->check_array (records, records[0].static_size, nPairs));
+		  recordsZ.sanitize (c, nPairs));
   }
 
   protected:
   // TODO(ebraminio): A custom version of "BinSearchArrayOf<KerxPair> pairs;" is
   // needed here to use HBUINT32 instead
-  HBUINT32 nPairs;	/* The number of kerning pairs in this subtable */
-  HBUINT32 searchRange; /* The largest power of two less than or equal to the value of nPairs,
-                         * multiplied by the size in bytes of an entry in the subtable. */
-  HBUINT32 entrySelector; /* This is calculated as log2 of the largest power of two less
-                           * than or equal to the value of nPairs. */
-  HBUINT32 rangeShift;	/* The value of nPairs minus the largest power of two less than or equal to nPairs. */
-  KerxFormat0Records records[VAR]; /* VAR=nPairs */
+  HBUINT32	nPairs;		/* The number of kerning pairs in this subtable */
+  HBUINT32	searchRange;	/* The largest power of two less than or equal to the value of nPairs,
+				 * multiplied by the size in bytes of an entry in the subtable. */
+  HBUINT32	entrySelector;	/* This is calculated as log2 of the largest power of two less
+				 * than or equal to the value of nPairs. */
+  HBUINT32	rangeShift;	/* The value of nPairs minus the largest power of two less than or equal to nPairs. */
+  UnsizedArrayOf<KerxFormat0Records>
+		recordsZ;	/* VAR=nPairs */
   public:
-  DEFINE_SIZE_ARRAY (16, records);
+  DEFINE_SIZE_ARRAY (16, recordsZ);
 };
 
 struct KerxSubTableFormat1
@@ -94,7 +99,7 @@ struct KerxSubTableFormat1
   {
     TRACE_SANITIZE (this);
     return_trace (c->check_struct (this) &&
-      stateHeader.sanitize (c));
+		  stateHeader.sanitize (c));
   }
 
   protected:
@@ -142,7 +147,7 @@ struct KerxSubTableFormat2
   {
     TRACE_SANITIZE (this);
     return_trace (c->check_struct (this) &&
-      rowWidth.sanitize (c) &&
+		  rowWidth.sanitize (c) &&
 		  leftClassTable.sanitize (c, this) &&
 		  rightClassTable.sanitize (c, this) &&
 		  array.sanitize (c, this));
@@ -169,7 +174,7 @@ struct KerxSubTableFormat4
   {
     TRACE_SANITIZE (this);
     return_trace (c->check_struct (this) &&
-      rowWidth.sanitize (c) &&
+		  rowWidth.sanitize (c) &&
 		  leftClassTable.sanitize (c, this) &&
 		  rightClassTable.sanitize (c, this) &&
 		  array.sanitize (c, this));
@@ -196,10 +201,10 @@ struct KerxSubTableFormat6
   {
     TRACE_SANITIZE (this);
     return_trace (c->check_struct (this) &&
-      rowIndexTable.sanitize (c, this) &&
-      columnIndexTable.sanitize (c, this) &&
-      kerningArray.sanitize (c, this) &&
-      kerningVector.sanitize (c, this));
+		  rowIndexTable.sanitize (c, this) &&
+		  columnIndexTable.sanitize (c, this) &&
+		  kerningArray.sanitize (c, this) &&
+		  kerningVector.sanitize (c, this));
   }
 
   protected:
@@ -236,7 +241,7 @@ struct KerxTable
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
-    if (!c->check_struct (this))
+    if (unlikely (!c->check_struct (this)))
       return_trace (false);
 
     switch (format) {
@@ -296,18 +301,18 @@ struct kerx
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
-    if (!(c->check_struct (this)))
+    if (unlikely (!(c->check_struct (this))))
      return_trace (false);
 
     /* TODO: Something like `morx`s ChainSubtable should be done here instead */
     const KerxTable *table = &StructAfter<KerxTable> (*this);
-    if (!(table->sanitize (c)))
+    if (unlikely (!(table->sanitize (c))))
       return_trace (false);
 
     for (unsigned int i = 0; i < nTables - 1; ++i)
     {
       table = &StructAfter<KerxTable> (*table);
-      if (!(table->sanitize (c)))
+      if (unlikely (!(table->sanitize (c))))
         return_trace (false);
     }
 

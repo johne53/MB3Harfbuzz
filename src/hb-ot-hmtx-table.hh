@@ -31,18 +31,19 @@
 #include "hb-ot-hhea-table.hh"
 #include "hb-ot-os2-table.hh"
 #include "hb-ot-var-hvar-table.hh"
+#include "hb-subset-plan.hh"
+
+/*
+ * hmtx -- Horizontal Metrics
+ * https://docs.microsoft.com/en-us/typography/opentype/spec/hmtx
+ * vmtx -- Vertical Metrics
+ * https://docs.microsoft.com/en-us/typography/opentype/spec/vmtx
+ */
+#define HB_OT_TAG_hmtx HB_TAG('h','m','t','x')
+#define HB_OT_TAG_vmtx HB_TAG('v','m','t','x')
 
 
 namespace OT {
-
-
-/*
- * hmtx -- The Horizontal Metrics Table
- * vmtx -- The Vertical Metrics Table
- */
-
-#define HB_OT_TAG_hmtx HB_TAG('h','m','t','x')
-#define HB_OT_TAG_vmtx HB_TAG('v','m','t','x')
 
 
 struct LongMetric

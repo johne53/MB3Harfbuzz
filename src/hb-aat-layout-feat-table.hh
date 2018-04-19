@@ -27,17 +27,22 @@
 
 #include "hb-aat-layout-common-private.hh"
 
+/*
+ * feat -- Feature Name
+ * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6feat.html
+ */
 #define HB_AAT_TAG_feat HB_TAG('f','e','a','t')
 
 
 namespace AAT {
+
 
 struct SettingName
 {
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
-    return_trace (c->check_struct (this));
+    return_trace (likely (c->check_struct (this)));
   }
 
   protected:
@@ -52,8 +57,8 @@ struct FeatureName
   inline bool sanitize (hb_sanitize_context_t *c, const void *base) const
   {
     TRACE_SANITIZE (this);
-    return_trace (c->check_struct (this) &&
-		  (base+settingTable).sanitize (c, nSettings));
+    return_trace (likely (c->check_struct (this) &&
+			  (base+settingTable).sanitize (c, nSettings)));
   }
 
   enum {
@@ -86,11 +91,6 @@ struct FeatureName
   DEFINE_SIZE_STATIC (12);
 };
 
-/*
- * feat -- Feature name
- * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6feat.html
- */
-
 struct feat
 {
   static const hb_tag_t tableTag = HB_AAT_TAG_feat;
@@ -98,8 +98,8 @@ struct feat
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
-    return_trace (c->check_struct (this) &&
-		  names.sanitize (c, featureNameCount, this));
+    return_trace (likely (c->check_struct (this) &&
+			  names.sanitize (c, featureNameCount, this)));
   }
 
   protected:

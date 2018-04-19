@@ -51,7 +51,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && _MSC_VER >= 1500) || defined(__MINGW32__)
 #include <intrin.h>
 #endif
 
@@ -221,16 +221,14 @@ static int errno = 0; /* Use something better? */
 #    endif
 #  elif defined(_MSC_VER) || defined(__MINGW32__)
 /* For MSVC:
- * http://msdn.microsoft.com/en-ca/library/tze57ck3.aspx
- * http://msdn.microsoft.com/en-ca/library/zk17ww08.aspx
+ * https://msdn.microsoft.com/en-us/library/tze57ck3.aspx
+ * https://msdn.microsoft.com/en-us/library/zk17ww08.aspx
  * mingw32 headers say atexit is safe to use in shared libraries.
  */
 #    define HB_USE_ATEXIT 1
-#  elif defined(__ANDROID__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
-/* This was fixed in Android NKD r8 or r8b:
- * https://code.google.com/p/android/issues/detail?id=6455
- * which introduced GCC 4.6:
- * https://developer.android.com/tools/sdk/ndk/index.html
+#  elif defined(__ANDROID__)
+/* This is available since Android NKD r8 or r8b:
+ * https://issuetracker.google.com/code/p/android/issues/detail?id=6455
  */
 #    define HB_USE_ATEXIT 1
 #  elif defined(__APPLE__)
@@ -383,7 +381,7 @@ _hb_bit_storage (T v)
     return sizeof (unsigned long long) * 8 - __builtin_clzll (v);
 #endif
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && _MSC_VER >= 1500) || defined(__MINGW32__)
   if (sizeof (T) <= sizeof (unsigned int))
   {
     unsigned long where;
@@ -456,7 +454,7 @@ _hb_ctz (T v)
     return __builtin_ctzll (v);
 #endif
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && _MSC_VER >= 1500) || defined(__MINGW32__)
   if (sizeof (T) <= sizeof (unsigned int))
   {
     unsigned long where;

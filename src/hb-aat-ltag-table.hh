@@ -27,32 +27,32 @@
 
 #include "hb-aat-layout-common-private.hh"
 
+/*
+ * ltag -- Language Tag
+ * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6ltag.html
+ */
 #define HB_AAT_TAG_ltag HB_TAG('l','t','a','g')
 
 
 namespace AAT {
+
 
 struct FTStringRange
 {
   inline bool sanitize (hb_sanitize_context_t *c, const void *base) const
   {
     TRACE_SANITIZE (this);
-    return_trace (c->check_struct (this) && tag (base).sanitize (c, length));
+    return_trace (c->check_struct (this) && (base+tag).sanitize (c, length));
   }
 
   protected:
   OffsetTo<UnsizedArrayOf<HBUINT8> >
-		tag;	/* Offset from the start of the table to
-			 * the beginning of the string */
-  HBUINT16	length;	/* String length (in bytes) */
+		tag;		/* Offset from the start of the table to
+				 * the beginning of the string */
+  HBUINT16	length;		/* String length (in bytes) */
   public:
   DEFINE_SIZE_STATIC (4);
 };
-
-/*
- * ltag -- Language tags
- * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6ltag.html
- */
 
 struct ltag
 {
@@ -61,13 +61,13 @@ struct ltag
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
     TRACE_SANITIZE (this);
-    return_trace (c->check_struct (this) && tagRanges.sanitize (c, this));
+    return_trace (likely (c->check_struct (this) && tagRanges.sanitize (c, this)));
   }
 
   protected:
   HBUINT32	version;	/* Table version; currently 1 */
   HBUINT32	flags;		/* Table flags; currently none defined */
-  ArrayOf<FTStringRange, HBUINT32>
+  LArrayOf<FTStringRange>
 		tagRanges;	/* Range for each tag's string */
   public:
   DEFINE_SIZE_ARRAY (12, tagRanges);
