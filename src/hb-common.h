@@ -49,8 +49,8 @@
 #  include <inttypes.h>
 #elif defined (_AIX)
 #  include <sys/inttypes.h>
-#elif defined (_MSC_VER) && _MSC_VER < 1600
-/* VS 2010 (_MSC_VER 1600) has stdint.h */
+#elif defined (_MSC_VER) && _MSC_VER < 1600 && !defined (_STDINT_H)
+/* VS 2010 (_MSC_VER 1600) has stdint.h ('_STDINT_H' test added by JE - 19-04-2018) */
 typedef __int8 int8_t;
 typedef unsigned __int8 uint8_t;
 typedef __int16 int16_t;
