@@ -288,7 +288,7 @@ struct hb_sanitize_context_t :
     return likely (this->check_range (obj, obj->min_size));
   }
 
-  inline bool may_edit (const void *base HB_UNUSED, unsigned int len HB_UNUSED)
+  inline bool may_edit (const void *base, unsigned int len)
   {
     if (this->edit_count >= HB_SANITIZE_MAX_EDITS)
       return false;
@@ -684,8 +684,8 @@ typedef HBUINT16 UFWORD;
 struct F2DOT14 : HBINT16
 {
   // 16384 means 1<<14
-  inline float to_float (void) const { return ((int32_t) v) / 16384.0; }
-  inline void set_float (float f) { v.set (round (f * 16384.0)); }
+  inline float to_float (void) const { return ((int32_t) v) / 16384.f; }
+  inline void set_float (float f) { v.set (round (f * 16384.f)); }
   public:
   DEFINE_SIZE_STATIC (2);
 };
@@ -694,8 +694,8 @@ struct F2DOT14 : HBINT16
 struct Fixed : HBINT32
 {
   // 65536 means 1<<16
-  inline float to_float (void) const { return ((int32_t) v) / 65536.0; }
-  inline void set_float (float f) { v.set (round (f * 65536.0)); }
+  inline float to_float (void) const { return ((int32_t) v) / 65536.f; }
+  inline void set_float (float f) { v.set (round (f * 65536.f)); }
   public:
   DEFINE_SIZE_STATIC (4);
 };
@@ -1201,18 +1201,18 @@ struct BinSearchHeader
   {
     len.set (v);
     assert (len == v);
-    entrySelectorZ.set (MAX (1u, _hb_bit_storage (v)) - 1);
-    searchRangeZ.set (16 * (1u << entrySelectorZ));
-    rangeShiftZ.set (v * 16 > searchRangeZ
-                     ? 16 * v - searchRangeZ
-                     : 0);
+    entrySelector.set (MAX (1u, _hb_bit_storage (v)) - 1);
+    searchRange.set (16 * (1u << entrySelector));
+    rangeShift.set (v * 16 > searchRange
+		    ? 16 * v - searchRange
+		    : 0);
   }
 
   protected:
   HBUINT16	len;
-  HBUINT16	searchRangeZ;
-  HBUINT16	entrySelectorZ;
-  HBUINT16	rangeShiftZ;
+  HBUINT16	searchRange;
+  HBUINT16	entrySelector;
+  HBUINT16	rangeShift;
 
   public:
   DEFINE_SIZE_STATIC (8);

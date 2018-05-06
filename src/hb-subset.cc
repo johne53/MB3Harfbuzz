@@ -123,7 +123,7 @@ struct hb_subset_face_data_t
     hb_blob_t *blob;
   };
 
-  hb_prealloced_array_t<table_entry_t, 32> tables;
+  hb_vector_t<table_entry_t, 32> tables;
 };
 
 static hb_subset_face_data_t *
@@ -144,7 +144,7 @@ _hb_subset_face_data_destroy (void *user_data)
   for (unsigned int i = 0; i < data->tables.len; i++)
     hb_blob_destroy (data->tables[i].blob);
 
-  data->tables.finish ();
+  data->tables.fini ();
 
   free (data);
 }

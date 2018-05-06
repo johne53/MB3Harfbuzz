@@ -527,7 +527,7 @@ _hb_ceil_to_4 (unsigned int v)
 
 #define HB_PREALLOCED_ARRAY_INIT {0, 0, nullptr}
 template <typename Type, unsigned int StaticSize=16>
-struct hb_prealloced_array_t
+struct hb_vector_t
 {
   unsigned int len;
   unsigned int allocated;
@@ -691,7 +691,7 @@ struct hb_prealloced_array_t
     return false;
   }
 
-  inline void finish (void)
+  inline void fini (void)
   {
     if (array != static_array)
       free (array);
@@ -701,18 +701,23 @@ struct hb_prealloced_array_t
 };
 
 template <typename Type>
-struct hb_auto_array_t : hb_prealloced_array_t <Type>
+struct hb_auto_t : Type
 {
-  hb_auto_array_t (void) { hb_prealloced_array_t<Type>::init (); }
-  ~hb_auto_array_t (void) { hb_prealloced_array_t<Type>::finish (); }
+  hb_auto_t (void) { Type::init (); }
+  ~hb_auto_t (void) { Type::fini (); }
+  private: /* Hide */
+  void init (void) {}
+  void fini (void) {}
 };
+template <typename Type>
+struct hb_auto_array_t : hb_auto_t <hb_vector_t <Type> > {};
 
 
 #define HB_LOCKABLE_SET_INIT {HB_PREALLOCED_ARRAY_INIT}
 template <typename item_t, typename lock_t>
 struct hb_lockable_set_t
 {
-  hb_prealloced_array_t <item_t, 1> items;
+  hb_vector_t <item_t, 1> items;
 
   inline void init (void) { items.init (); }
 
@@ -726,7 +731,7 @@ struct hb_lockable_set_t
 	item_t old = *item;
 	*item = v;
 	l.unlock ();
-	old.finish ();
+	old.fini ();
       }
       else {
         item = nullptr;
@@ -751,7 +756,7 @@ struct hb_lockable_set_t
       *item = items[items.len - 1];
       items.pop ();
       l.unlock ();
-      old.finish ();
+      old.fini ();
     } else {
       l.unlock ();
     }
@@ -782,11 +787,11 @@ struct hb_lockable_set_t
     return item;
   }
 
-  inline void finish (lock_t &l)
+  inline void fini (lock_t &l)
   {
     if (!items.len) {
       /* No need for locking. */
-      items.finish ();
+      items.fini ();
       return;
     }
     l.lock ();
@@ -794,10 +799,10 @@ struct hb_lockable_set_t
       item_t old = items[items.len - 1];
 	items.pop ();
 	l.unlock ();
-	old.finish ();
+	old.fini ();
 	l.lock ();
     }
-    items.finish ();
+    items.fini ();
     l.unlock ();
   }
 

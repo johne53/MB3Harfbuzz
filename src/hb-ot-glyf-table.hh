@@ -56,8 +56,8 @@ struct loca
   }
 
   protected:
-  HBUINT8		dataX[VAR];		/* Location data. */
-  DEFINE_SIZE_ARRAY (0, dataX);
+  HBUINT8		dataZ[VAR];		/* Location data. */
+  DEFINE_SIZE_ARRAY (0, dataZ);
 };
 
 
@@ -377,13 +377,13 @@ struct glyf
 
       if (short_offset)
       {
-        const HBUINT16 *offsets = (const HBUINT16 *) loca_table->dataX;
+        const HBUINT16 *offsets = (const HBUINT16 *) loca_table->dataZ;
 	*start_offset = 2 * offsets[glyph];
 	*end_offset   = 2 * offsets[glyph + 1];
       }
       else
       {
-        const HBUINT32 *offsets = (const HBUINT32 *) loca_table->dataX;
+        const HBUINT32 *offsets = (const HBUINT32 *) loca_table->dataZ;
 
 	*start_offset = offsets[glyph];
 	*end_offset   = offsets[glyph + 1];
@@ -420,7 +420,7 @@ struct glyf
         } while (composite_it.move_to_next());
 
         if ( (uint16_t) last->flags & CompositeGlyphHeader::WE_HAVE_INSTRUCTIONS)
-          *instruction_start = ((char *) last - (char *) glyf_table->dataX) + last->get_size();
+          *instruction_start = ((char *) last - (char *) glyf_table->dataZ) + last->get_size();
         else
           *instruction_start = end_offset;
         *instruction_end = end_offset;
@@ -433,9 +433,23 @@ struct glyf
       else
       {
         unsigned int instruction_length_offset = start_offset + GlyphHeader::static_size + 2 * num_contours;
+	if (unlikely (instruction_length_offset + 2 > end_offset))
+	{
+	  DEBUG_MSG(SUBSET, nullptr, "Glyph size is too short, missing field instructionLength.");
+	  return false;
+	}
+
         const HBUINT16 &instruction_length = StructAtOffset<HBUINT16> (glyf_table, instruction_length_offset);
-        *instruction_start = instruction_length_offset + 2;
-        *instruction_end = *instruction_start + (uint16_t) instruction_length;
+	unsigned int start = instruction_length_offset + 2;
+	unsigned int end = start + (uint16_t) instruction_length;
+	if (unlikely (end > end_offset)) // Out of bounds of the current glyph
+	{
+	  DEBUG_MSG(SUBSET, nullptr, "The instructions array overruns the glyph's boundaries.");
+	  return false;
+	}
+
+	*instruction_start = start;
+        *instruction_end = end;
       }
       return true;
     }
@@ -471,9 +485,9 @@ struct glyf
   };
 
   protected:
-  HBUINT8		dataX[VAR];		/* Glyphs data. */
+  HBUINT8		dataZ[VAR];		/* Glyphs data. */
 
-  DEFINE_SIZE_ARRAY (0, dataX);
+  DEFINE_SIZE_ARRAY (0, dataZ);
 };
 
 } /* namespace OT */
