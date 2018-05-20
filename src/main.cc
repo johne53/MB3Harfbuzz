@@ -38,7 +38,7 @@
 using namespace OT;
 
 #ifndef HB_NO_VISIBILITY
-const void * const OT::_hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)] = {};
+const void * const _hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)] = {};
 #endif
 
 int
@@ -56,7 +56,7 @@ main (int argc, char **argv)
 
   Sanitizer<OpenTypeFontFile> sanitizer;
   hb_blob_t *font_blob = sanitizer.sanitize (blob);
-  const OpenTypeFontFile* sanitized = Sanitizer<OpenTypeFontFile>::lock_instance (font_blob);
+  const OpenTypeFontFile* sanitized = font_blob->as<OpenTypeFontFile> ();
   if (sanitized == &Null (OpenTypeFontFile))
   {
     printf ("Sanitization of the file wasn't successful. Exit");

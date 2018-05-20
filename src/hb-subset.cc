@@ -45,7 +45,7 @@
 
 
 #if !defined(HB_NO_VISIBILITY) && !defined(HB_SUBSET_BUILTIN)
-const void * const OT::_hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)] = {};
+const void * const _hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)] = {};
 #endif
 
 
@@ -87,11 +87,11 @@ _subset (hb_subset_plan_t *plan)
   OT::Sanitizer<TableType> sanitizer;
 
   hb_blob_t *source_blob = sanitizer.sanitize (plan->source->reference_table (TableType::tableTag));
-  const TableType *table = OT::Sanitizer<TableType>::lock_instance (source_blob);
+  const TableType *table = source_blob->as<TableType> ();
 
   hb_tag_t tag = TableType::tableTag;
   hb_bool_t result = false;
-  if (table != &OT::Null(TableType))
+  if (table != &Null(TableType))
   {
     result = table->subset(plan);
   } else {
@@ -157,7 +157,7 @@ _hb_subset_face_data_reference_blob (hb_subset_face_data_t *data)
   unsigned int face_length = table_count * 16 + 12;
 
   for (unsigned int i = 0; i < table_count; i++)
-    face_length += _hb_ceil_to_4 (hb_blob_get_length (data->tables.array[i].blob));
+    face_length += _hb_ceil_to_4 (hb_blob_get_length (data->tables.arrayZ[i].blob));
 
   char *buf = (char *) malloc (face_length);
   if (unlikely (!buf))

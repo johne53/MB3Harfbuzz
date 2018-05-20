@@ -47,7 +47,7 @@
 #include <stdio.h>
 
 #ifndef HB_NO_VISIBILITY
-const void * const OT::_hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)] = {};
+const void * const _hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)] = {};
 #endif
 
 void cbdt_callback (const uint8_t* data, unsigned int length,
@@ -91,7 +91,7 @@ void svg_callback (const uint8_t* data, unsigned int length,
 void colr_cpal_rendering (cairo_font_face_t *cairo_face, unsigned int upem, unsigned int num_glyphs,
 			  const OT::COLR *colr, const OT::CPAL *cpal)
 {
-  for (int i = 0; i < num_glyphs; ++i)
+  for (unsigned int i = 0; i < num_glyphs; ++i)
   {
     unsigned int first_layer_index, num_layers;
     if (colr->get_base_glyph_record (i, &first_layer_index, &num_layers))
@@ -171,7 +171,7 @@ void dump_glyphs (cairo_font_face_t *cairo_face, unsigned int upem, unsigned int
 {
   // Dump every glyph available on the font
   return; // disabled for now
-  for (int i = 0; i < num_glyphs; ++i)
+  for (unsigned int i = 0; i < num_glyphs; ++i)
   {
     cairo_text_extents_t extents;
     cairo_glyph_t glyph = {0};
@@ -240,11 +240,11 @@ int main (int argc, char **argv)
 
   OT::Sanitizer<OT::COLR> sanitizerCOLR;
   hb_blob_t* colr_blob = sanitizerCOLR.sanitize (face->reference_table (HB_OT_TAG_COLR));
-  const OT::COLR *colr = OT::Sanitizer<OT::COLR>::lock_instance (colr_blob);
+  const OT::COLR *colr = colr_blob->as<OT::COLR> ();
 
   OT::Sanitizer<OT::CPAL> sanitizerCPAL;
   hb_blob_t* cpal_blob = sanitizerCPAL.sanitize (face->reference_table (HB_OT_TAG_CPAL));
-  const OT::CPAL *cpal = OT::Sanitizer<OT::CPAL>::lock_instance (cpal_blob);
+  const OT::CPAL *cpal = cpal_blob->as<OT::CPAL> ();
 
   cairo_font_face_t *cairo_face;
   {

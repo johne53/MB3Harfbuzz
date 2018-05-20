@@ -30,23 +30,24 @@
 
 #include "hb-open-type-private.hh"
 #include "hb-ot-layout-private.hh"
+#include "hb-ot-map-private.hh"
 
-#include "hb-ot-layout-base-table.hh"
 #include "hb-ot-layout-gdef-table.hh"
 #include "hb-ot-layout-gsub-table.hh"
 #include "hb-ot-layout-gpos-table.hh"
-#include "hb-ot-layout-jstf-table.hh" // Just so we compile it; unused otherwise.
-#include "hb-ot-name-table.hh" // Just so we compile it; unused otherwise.
+
+// Just so we compile them; unused otherwise:
+#include "hb-ot-layout-base-table.hh"
+#include "hb-ot-layout-jstf-table.hh"
 #include "hb-ot-color-colr-table.hh"
 #include "hb-ot-color-cpal-table.hh"
-#include "hb-ot-color-sbix-table.hh" // Just so we compile it; unused otherwise.
-#include "hb-ot-color-svg-table.hh" // Just so we compile it; unused otherwise.
-
-#include "hb-ot-map-private.hh"
+#include "hb-ot-color-sbix-table.hh"
+#include "hb-ot-color-svg-table.hh"
+#include "hb-ot-name-table.hh"
 
 
 #ifndef HB_NO_VISIBILITY
-const void * const OT::_hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)] = {};
+const void * const _hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)] = {};
 #endif
 
 
@@ -58,24 +59,17 @@ _hb_ot_layout_create (hb_face_t *face)
     return nullptr;
 
   layout->gdef_blob = OT::Sanitizer<OT::GDEF>().sanitize (face->reference_table (HB_OT_TAG_GDEF));
-  layout->gdef = OT::Sanitizer<OT::GDEF>::lock_instance (layout->gdef_blob);
+  layout->gdef = layout->gdef_blob->as<OT::GDEF> ();
 
   layout->gsub_blob = OT::Sanitizer<OT::GSUB>().sanitize (face->reference_table (HB_OT_TAG_GSUB));
-  layout->gsub = OT::Sanitizer<OT::GSUB>::lock_instance (layout->gsub_blob);
+  layout->gsub = layout->gsub_blob->as<OT::GSUB> ();
 
   layout->gpos_blob = OT::Sanitizer<OT::GPOS>().sanitize (face->reference_table (HB_OT_TAG_GPOS));
-  layout->gpos = OT::Sanitizer<OT::GPOS>::lock_instance (layout->gpos_blob);
+  layout->gpos = layout->gpos_blob->as<OT::GPOS> ();
 
-  layout->base.init (face);
-  layout->colr.init (face);
-  layout->cpal.init (face);
   layout->math.init (face);
   layout->fvar.init (face);
   layout->avar.init (face);
-  layout->ankr.init (face);
-  layout->kerx.init (face);
-  layout->morx.init (face);
-  layout->trak.init (face);
 
   {
     /*
@@ -83,9 +77,9 @@ _hb_ot_layout_create (hb_face_t *face)
      * See this thread for why we finally had to bend in and do this:
      * https://lists.freedesktop.org/archives/harfbuzz/2016-February/005489.html
      */
-    unsigned int gdef_len = hb_blob_get_length (layout->gdef_blob);
-    unsigned int gsub_len = hb_blob_get_length (layout->gsub_blob);
-    unsigned int gpos_len = hb_blob_get_length (layout->gpos_blob);
+    unsigned int gdef_len = layout->gdef_blob->length;
+    unsigned int gsub_len = layout->gsub_blob->length;
+    unsigned int gpos_len = layout->gpos_blob->length;
     if (0
       /* sha1sum:c5ee92f0bca4bfb7d06c4d03e8cf9f9cf75d2e8a Windows 7? timesi.ttf */
       || (442 == gdef_len && 42038 == gpos_len && 2874 == gsub_len)
@@ -108,7 +102,7 @@ _hb_ot_layout_create (hb_face_t *face)
        * https://lists.freedesktop.org/archives/harfbuzz/2016-February/005489.html
        */
      if (3 == layout->gdef->get_glyph_class (5))
-       layout->gdef = &OT::Null(OT::GDEF);
+       layout->gdef = &Null(OT::GDEF);
     }
     else if (0
       /* sha1sum:96eda93f7d33e79962451c6c39a6b51ee893ce8c  tahoma.ttf from Windows 8 */
@@ -180,7 +174,7 @@ _hb_ot_layout_create (hb_face_t *face)
        *     https://bugzilla.mozilla.org/show_bug.cgi?id=1279693
        *     https://bugzilla.mozilla.org/show_bug.cgi?id=1279875
        */
-      layout->gdef = &OT::Null(OT::GDEF);
+      layout->gdef = &Null(OT::GDEF);
     }
   }
 
@@ -222,16 +216,9 @@ _hb_ot_layout_destroy (hb_ot_layout_t *layout)
   hb_blob_destroy (layout->gsub_blob);
   hb_blob_destroy (layout->gpos_blob);
 
-  layout->base.fini ();
-  layout->colr.fini ();
-  layout->cpal.fini ();
   layout->math.fini ();
   layout->fvar.fini ();
   layout->avar.fini ();
-  layout->ankr.fini ();
-  layout->kerx.fini ();
-  layout->morx.fini ();
-  layout->trak.fini ();
 
   free (layout);
 }
@@ -239,7 +226,7 @@ _hb_ot_layout_destroy (hb_ot_layout_t *layout)
 // static inline const OT::BASE&
 // _get_base (hb_face_t *face)
 // {
-//   if (unlikely (!hb_ot_shaper_face_data_ensure (face))) return OT::Null(OT::BASE);
+//   if (unlikely (!hb_ot_shaper_face_data_ensure (face))) return Null(OT::BASE);
 //   hb_ot_layout_t * layout = hb_ot_layout_from_face (face);
 //   return *(layout->base.get ());
 // }
@@ -247,19 +234,19 @@ _hb_ot_layout_destroy (hb_ot_layout_t *layout)
 static inline const OT::GDEF&
 _get_gdef (hb_face_t *face)
 {
-  if (unlikely (!hb_ot_shaper_face_data_ensure (face))) return OT::Null(OT::GDEF);
+  if (unlikely (!hb_ot_shaper_face_data_ensure (face))) return Null(OT::GDEF);
   return *hb_ot_layout_from_face (face)->gdef;
 }
 static inline const OT::GSUB&
 _get_gsub (hb_face_t *face)
 {
-  if (unlikely (!hb_ot_shaper_face_data_ensure (face))) return OT::Null(OT::GSUB);
+  if (unlikely (!hb_ot_shaper_face_data_ensure (face))) return Null(OT::GSUB);
   return *hb_ot_layout_from_face (face)->gsub;
 }
 static inline const OT::GPOS&
 _get_gpos (hb_face_t *face)
 {
-  if (unlikely (!hb_ot_shaper_face_data_ensure (face))) return OT::Null(OT::GPOS);
+  if (unlikely (!hb_ot_shaper_face_data_ensure (face))) return Null(OT::GPOS);
   return *hb_ot_layout_from_face (face)->gpos;
 }
 
@@ -331,7 +318,7 @@ get_gsubgpos_table (hb_face_t *face,
   switch (table_tag) {
     case HB_OT_TAG_GSUB: return _get_gsub (face);
     case HB_OT_TAG_GPOS: return _get_gpos (face);
-    default:             return OT::Null(OT::GSUBGPOS);
+    default:             return Null(OT::GSUBGPOS);
   }
 }
 
@@ -911,7 +898,7 @@ hb_ot_layout_feature_with_variations_get_lookups (hb_face_t    *face,
 hb_bool_t
 hb_ot_layout_has_substitution (hb_face_t *face)
 {
-  return &_get_gsub (face) != &OT::Null(OT::GSUB);
+  return &_get_gsub (face) != &Null(OT::GSUB);
 }
 
 /**
@@ -975,7 +962,7 @@ hb_ot_layout_lookup_substitute_closure (hb_face_t    *face,
 hb_bool_t
 hb_ot_layout_has_positioning (hb_face_t *face)
 {
-  return &_get_gpos (face) != &OT::Null(OT::GPOS);
+  return &_get_gpos (face) != &Null(OT::GPOS);
 }
 
 void
@@ -1311,5 +1298,5 @@ hb_ot_layout_substitute_lookup (OT::hb_ot_apply_context_t *c,
 // hb_bool_t
 // hb_ot_base_has_data (hb_face_t *face)
 // {
-//   return &_get_base (face) != &OT::Null(OT::BASE);
+//   return &_get_base (face) != &Null(OT::BASE);
 // }

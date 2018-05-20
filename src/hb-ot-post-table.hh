@@ -110,8 +110,8 @@ struct post
     inline void init (hb_face_t *face)
     {
       blob = Sanitizer<post>().sanitize (face->reference_table (HB_OT_TAG_post));
-      const post *table = Sanitizer<post>::lock_instance (blob);
-      unsigned int table_length = hb_blob_get_length (blob);
+      const post *table = blob->as<post> ();
+      unsigned int table_length = blob->length;
 
       version = table->version.to_int ();
       index_to_offset.init ();
@@ -141,7 +141,7 @@ struct post
     inline bool get_glyph_name (hb_codepoint_t glyph,
 				char *buf, unsigned int buf_len) const
     {
-      hb_string_t s = find_glyph_name (glyph);
+      hb_bytes_t s = find_glyph_name (glyph);
       if (!s.len)
         return false;
       if (!buf_len)
@@ -185,7 +185,7 @@ struct post
 	}
       }
 
-      hb_string_t st (name, len);
+      hb_bytes_t st (name, len);
       const uint16_t *gid = (const uint16_t *) hb_bsearch_r (&st, gids, count, sizeof (gids[0]), cmp_key, (void *) this);
       if (gid)
       {
@@ -220,38 +220,38 @@ struct post
     static inline int cmp_key (const void *pk, const void *po, void *arg)
     {
       const accelerator_t *thiz = (const accelerator_t *) arg;
-      const hb_string_t *key = (const hb_string_t *) pk;
+      const hb_bytes_t *key = (const hb_bytes_t *) pk;
       uint16_t o = * (const uint16_t *) po;
       return thiz->find_glyph_name (o).cmp (*key);
     }
 
-    inline hb_string_t find_glyph_name (hb_codepoint_t glyph) const
+    inline hb_bytes_t find_glyph_name (hb_codepoint_t glyph) const
     {
       if (version == 0x00010000)
       {
 	if (glyph >= NUM_FORMAT1_NAMES)
-	  return hb_string_t ();
+	  return hb_bytes_t ();
 
 	return format1_names (glyph);
       }
 
       if (version != 0x00020000 || glyph >= glyphNameIndex->len)
-	return hb_string_t ();
+	return hb_bytes_t ();
 
-      unsigned int index = glyphNameIndex->array[glyph];
+      unsigned int index = glyphNameIndex->arrayZ[glyph];
       if (index < NUM_FORMAT1_NAMES)
 	return format1_names (index);
       index -= NUM_FORMAT1_NAMES;
 
       if (index >= index_to_offset.len)
-	return hb_string_t ();
-      unsigned int offset = index_to_offset.array[index];
+	return hb_bytes_t ();
+      unsigned int offset = index_to_offset.arrayZ[index];
 
       const uint8_t *data = pool + offset;
       unsigned int name_length = *data;
       data++;
 
-      return hb_string_t ((const char *) data, name_length);
+      return hb_bytes_t ((const char *) data, name_length);
     }
 
     private:
