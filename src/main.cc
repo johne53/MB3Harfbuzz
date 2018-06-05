@@ -24,6 +24,7 @@
  * Red Hat Author(s): Behdad Esfahbod
  */
 
+#include "hb-static.cc"
 #include "hb-open-file-private.hh"
 #include "hb-ot-layout-gdef-table.hh"
 #include "hb-ot-layout-gsubgpos-private.hh"
@@ -36,10 +37,6 @@
 
 
 using namespace OT;
-
-#ifndef HB_NO_VISIBILITY
-const void * const _hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)] = {};
-#endif
 
 int
 main (int argc, char **argv)
@@ -57,7 +54,7 @@ main (int argc, char **argv)
   Sanitizer<OpenTypeFontFile> sanitizer;
   hb_blob_t *font_blob = sanitizer.sanitize (blob);
   const OpenTypeFontFile* sanitized = font_blob->as<OpenTypeFontFile> ();
-  if (sanitized == &Null (OpenTypeFontFile))
+  if (sanitized == &Null(OpenTypeFontFile))
   {
     printf ("Sanitization of the file wasn't successful. Exit");
     return 1;

@@ -779,6 +779,12 @@ struct OffsetTo : Offset<OffsetType>
   {
     unsigned int offset = *this;
     if (unlikely (!offset)) return Null(Type);
+    return StructAtOffset<const Type> (base, offset);
+  }
+  inline Type& operator () (void *base) const
+  {
+    unsigned int offset = *this;
+    if (unlikely (!offset)) return Crap(Type);
     return StructAtOffset<Type> (base, offset);
   }
 
@@ -932,6 +938,7 @@ struct ArrayOf
   }
   inline Type& operator [] (unsigned int i)
   {
+    if (unlikely (i >= len)) return Crap(Type);
     return arrayZ[i];
   }
   inline unsigned int get_size (void) const
@@ -1040,6 +1047,11 @@ struct OffsetListOf : OffsetArrayOf<Type>
     if (unlikely (i >= this->len)) return Null(Type);
     return this+this->arrayZ[i];
   }
+  inline const Type& operator [] (unsigned int i)
+  {
+    if (unlikely (i >= this->len)) return Crap(Type);
+    return this+this->arrayZ[i];
+  }
 
   inline bool sanitize (hb_sanitize_context_t *c) const
   {
@@ -1062,6 +1074,11 @@ struct HeadlessArrayOf
   inline const Type& operator [] (unsigned int i) const
   {
     if (unlikely (i >= len || !i)) return Null(Type);
+    return arrayZ[i-1];
+  }
+  inline Type& operator [] (unsigned int i)
+  {
+    if (unlikely (i >= len || !i)) return Crap(Type);
     return arrayZ[i-1];
   }
   inline unsigned int get_size (void) const

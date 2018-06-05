@@ -646,15 +646,11 @@ _hb_uniscribe_shape (hb_shape_plan_t    *shape_plan,
       feature_event_t *event;
 
       event = feature_events.push ();
-      if (unlikely (!event))
-	goto fail_features;
       event->index = features[i].start;
       event->start = true;
       event->feature = feature;
 
       event = feature_events.push ();
-      if (unlikely (!event))
-	goto fail_features;
       event->index = features[i].end;
       event->start = false;
       event->feature = feature;
@@ -668,8 +664,6 @@ _hb_uniscribe_shape (hb_shape_plan_t    *shape_plan,
       feature.order = num_features + 1;
 
       feature_event_t *event = feature_events.push ();
-      if (unlikely (!event))
-	goto fail_features;
       event->index = 0; /* This value does magic. */
       event->start = false;
       event->feature = feature;
@@ -686,8 +680,6 @@ _hb_uniscribe_shape (hb_shape_plan_t    *shape_plan,
       {
         /* Save a snapshot of active features and the range. */
 	range_record_t *range = range_records.push ();
-	if (unlikely (!range))
-	  goto fail_features;
 
 	unsigned int offset = feature_records.len;
 
@@ -696,10 +688,7 @@ _hb_uniscribe_shape (hb_shape_plan_t    *shape_plan,
 	{
 	  if (!j || active_features[j].rec.tagFeature != feature_records[feature_records.len - 1].tagFeature)
 	  {
-	    OPENTYPE_FEATURE_RECORD *feature = feature_records.push ();
-	    if (unlikely (!feature))
-	      goto fail_features;
-	    *feature = active_features[j].rec;
+	    feature_records.push (active_features[j].rec);
 	  }
 	  else
 	  {
@@ -718,12 +707,12 @@ _hb_uniscribe_shape (hb_shape_plan_t    *shape_plan,
 	last_index = event->index;
       }
 
-      if (event->start) {
-        active_feature_t *feature = active_features.push ();
-	if (unlikely (!feature))
-	  goto fail_features;
-	*feature = event->feature;
-      } else {
+      if (event->start)
+      {
+	active_features.push (event->feature);
+      }
+      else
+      {
         active_feature_t *feature = active_features.find (&event->feature);
 	if (feature)
 	  active_features.remove (feature - active_features.arrayZ);
@@ -731,7 +720,7 @@ _hb_uniscribe_shape (hb_shape_plan_t    *shape_plan,
     }
 
     if (!range_records.len) /* No active feature found. */
-      goto fail_features;
+      num_features = 0;
 
     /* Fixup the pointers. */
     for (unsigned int i = 0; i < range_records.len; i++)
@@ -739,11 +728,6 @@ _hb_uniscribe_shape (hb_shape_plan_t    *shape_plan,
       range_record_t *range = &range_records[i];
       range->props.potfRecords = feature_records.arrayZ + reinterpret_cast<uintptr_t> (range->props.potfRecords);
     }
-  }
-  else
-  {
-  fail_features:
-    num_features = 0;
   }
 
 #define FAIL(...) \

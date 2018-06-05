@@ -90,6 +90,14 @@ extern "C" void  hb_free_impl(void *ptr);
 	HB_UNUSED typedef int HB_PASTE(static_assertion_failed_at_line_, __LINE__) [(e) ? 1 : -1]
 #endif // static_assert
 
+#ifdef __GNUC__
+#if (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 8))
+#define thread_local __thread
+#endif
+#else
+#define thread_local
+#endif
+
 #endif // __cplusplus < 201103L
 
 #if (defined(__GNUC__) || defined(__clang__)) && defined(__OPTIMIZE__)
@@ -315,7 +323,7 @@ static_assert ((sizeof (hb_var_int_t) == 4), "");
 
 
 
-/* Misc */
+/* Tiny functions */
 
 /*
  * Void!
@@ -522,15 +530,104 @@ _hb_ceil_to_4 (unsigned int v)
 
 
 
+/*
+ *
+ * Utility types
+ *
+ */
+
+#define HB_DISALLOW_COPY_AND_ASSIGN(TypeName) \
+  TypeName(const TypeName&); \
+  void operator=(const TypeName&)
+
+/*
+ * Static pools
+ */
+
+/* Global nul-content Null pool.  Enlarge as necessary. */
+
+#define HB_NULL_POOL_SIZE 264
+static_assert (HB_NULL_POOL_SIZE % sizeof (void *) == 0, "Align HB_NULL_POOL_SIZE.");
+
+#ifdef HB_NO_VISIBILITY
+static
+#else
+extern HB_INTERNAL
+#endif
+void * const _hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)]
+#ifdef HB_NO_VISIBILITY
+= {}
+#endif
+;
+/* Generic nul-content Null objects. */
+template <typename Type>
+static inline Type const & Null (void) {
+  static_assert (sizeof (Type) <= HB_NULL_POOL_SIZE, "Increase HB_NULL_POOL_SIZE.");
+  return *reinterpret_cast<Type const *> (_hb_NullPool);
+}
+#define Null(Type) Null<Type>()
+
+/* Specializaiton for arbitrary-content arbitrary-sized Null objects. */
+#define DEFINE_NULL_DATA(Namespace, Type, data) \
+} /* Close namespace. */ \
+static const char _Null##Type[sizeof (Namespace::Type) + 1] = data; /* +1 is for nul-termination in data */ \
+template <> \
+/*static*/ inline const Namespace::Type& Null<Namespace::Type> (void) { \
+  return *reinterpret_cast<const Namespace::Type *> (_Null##Type); \
+} \
+namespace Namespace { \
+/* The following line really exists such that we end in a place needing semicolon */ \
+static_assert (Namespace::Type::min_size + 1 <= sizeof (_Null##Type), "Null pool too small.  Enlarge.")
+
+
+/* Global writable pool.  Enlarge as necessary. */
+
+/* To be fully correct, CrapPool must be thread_local. However, we do not rely on CrapPool
+ * for correct operation. It only exist to catch and divert program logic bugs instead of
+ * causing bad memory access. So, races there are not actually introducing incorrectness
+ * in the code. Has ~12kb binary size overhead to have it, also clang build fails with it. */
+#ifdef HB_NO_VISIBILITY
+static
+#else
+extern HB_INTERNAL
+#endif
+/*thread_local*/ void * _hb_CrapPool[HB_NULL_POOL_SIZE / sizeof (void *)]
+#ifdef HB_NO_VISIBILITY
+= {}
+#endif
+;
+/* CRAP pool: Common Region for Access Protection. */
+template <typename Type>
+static inline Type& Crap (void) {
+  static_assert (sizeof (Type) <= HB_NULL_POOL_SIZE, "Increase HB_NULL_POOL_SIZE.");
+  Type *obj = reinterpret_cast<Type *> (_hb_CrapPool);
+  *obj = Null(Type);
+  return *obj;
+}
+#define Crap(Type) Crap<Type>()
+
+template <typename Type>
+struct CrapOrNull {
+  static inline Type & get (void) { return Crap(Type); }
+};
+template <typename Type>
+struct CrapOrNull<const Type> {
+  static inline Type const & get (void) { return Null(Type); }
+};
+#define CrapOrNull(Type) CrapOrNull<Type>::get ()
+
+
+
 /* arrays and maps */
 
 
 #define HB_PREALLOCED_ARRAY_INIT {0, 0, nullptr}
-template <typename Type, unsigned int StaticSize=16>
+template <typename Type, unsigned int StaticSize=8>
 struct hb_vector_t
 {
   unsigned int len;
   unsigned int allocated;
+  bool successful;
   Type *arrayZ;
   Type static_array[StaticSize];
 
@@ -538,23 +635,42 @@ struct hb_vector_t
   {
     len = 0;
     allocated = ARRAY_LENGTH (static_array);
+    successful = true;
     arrayZ = static_array;
   }
 
-  inline Type& operator [] (unsigned int i) { return arrayZ[i]; }
-  inline const Type& operator [] (unsigned int i) const { return arrayZ[i]; }
+  inline Type& operator [] (unsigned int i)
+  {
+    if (unlikely (i >= len))
+      return Crap (Type);
+    return arrayZ[i];
+  }
+  inline const Type& operator [] (unsigned int i) const
+  {
+    if (unlikely (i >= len))
+      return Null(Type);
+    return arrayZ[i];
+  }
 
   inline Type *push (void)
   {
     if (unlikely (!resize (len + 1)))
-      return nullptr;
-
+      return &Crap(Type);
     return &arrayZ[len - 1];
+  }
+  inline Type *push (const Type& v)
+  {
+    Type *p = push ();
+    *p = v;
+    return p;
   }
 
   /* Allocate for size but don't adjust len. */
-  inline bool alloc(unsigned int size)
+  inline bool alloc (unsigned int size)
   {
+    if (unlikely (!successful))
+      return false;
+
     if (likely (size <= allocated))
       return true;
 
@@ -566,19 +682,24 @@ struct hb_vector_t
 
     Type *new_array = nullptr;
 
-    if (arrayZ == static_array) {
+    if (arrayZ == static_array)
+    {
       new_array = (Type *) calloc (new_allocated, sizeof (Type));
       if (new_array)
         memcpy (new_array, arrayZ, len * sizeof (Type));
-          } else {
+    }
+    else
+    {
       bool overflows = (new_allocated < allocated) || _hb_unsigned_int_mul_overflows (new_allocated, sizeof (Type));
-      if (likely (!overflows)) {
+      if (likely (!overflows))
         new_array = (Type *) realloc (arrayZ, new_allocated * sizeof (Type));
-      }
     }
 
     if (unlikely (!new_array))
+    {
+      successful = false;
       return false;
+    }
 
     arrayZ = new_array;
     allocated = new_allocated;
@@ -586,8 +707,9 @@ struct hb_vector_t
     return true;
   }
 
-  inline bool resize (unsigned int size)
+  inline bool resize (int size_)
   {
+    unsigned int size = size_ < 0 ? 0u : (unsigned int) size_;
     if (!alloc (size))
       return false;
 
@@ -597,6 +719,7 @@ struct hb_vector_t
 
   inline void pop (void)
   {
+    if (!len) return;
     len--;
   }
 
@@ -610,10 +733,11 @@ struct hb_vector_t
      len--;
   }
 
-  inline void shrink (unsigned int l)
+  inline void shrink (int size_)
   {
-     if (l < len)
-       len = l;
+    unsigned int size = size_ < 0 ? 0u : (unsigned int) size_;
+     if (size < len)
+       len = size;
   }
 
   template <typename T>
@@ -738,9 +862,7 @@ struct hb_lockable_set_t
 	l.unlock ();
       }
     } else {
-      item = items.push ();
-      if (likely (item))
-	*item = v;
+      item = items.push (v);
       l.unlock ();
     }
     return item;
@@ -779,9 +901,7 @@ struct hb_lockable_set_t
     l.lock ();
     item_t *item = items.find (v);
     if (!item) {
-      item = items.push ();
-      if (likely (item))
-        *item = v;
+      item = items.push (v);
     }
     l.unlock ();
     return item;
@@ -978,19 +1098,35 @@ struct HbOpXor
   template <typename T> static void process (T &o, const T &a, const T &b) { o = a ^ b; }
 };
 
+
+/* Compiler-assisted vectorization. */
+
+/* The `vector_size' attribute was introduced in gcc 3.1. */
+#if defined( __GNUC__ ) && ( __GNUC__ >= 4 )
+#define HB_VECTOR_SIZE 128
+#elif !defined(HB_VECTOR_SIZE)
+#define HB_VECTOR_SIZE 0
+#endif
+
 /* Type behaving similar to vectorized vars defined using __attribute__((vector_size(...))). */
 template <typename elt_t, unsigned int byte_size>
 struct hb_vector_size_t
 {
-  elt_t& operator [] (unsigned int i) { return v[i]; }
-  const elt_t& operator [] (unsigned int i) const { return v[i]; }
+  elt_t& operator [] (unsigned int i) { return u.v[i]; }
+  const elt_t& operator [] (unsigned int i) const { return u.v[i]; }
 
   template <class Op>
   inline hb_vector_size_t process (const hb_vector_size_t &o) const
   {
     hb_vector_size_t r;
-    for (unsigned int i = 0; i < ARRAY_LENGTH (v); i++)
-      Op::process (r.v[i], v[i], o.v[i]);
+#if HB_VECTOR_SIZE
+    if (HB_VECTOR_SIZE && 0 == (byte_size * 8) % HB_VECTOR_SIZE)
+      for (unsigned int i = 0; i < ARRAY_LENGTH (u.vec); i++)
+	Op::process (r.u.vec[i], u.vec[i], o.u.vec[i]);
+    else
+#endif
+      for (unsigned int i = 0; i < ARRAY_LENGTH (u.v); i++)
+	Op::process (r.u.v[i], u.v[i], o.u.v[i]);
     return r;
   }
   inline hb_vector_size_t operator | (const hb_vector_size_t &o) const
@@ -1002,20 +1138,27 @@ struct hb_vector_size_t
   inline hb_vector_size_t operator ~ () const
   {
     hb_vector_size_t r;
-    for (unsigned int i = 0; i < ARRAY_LENGTH (v); i++)
-      r.v[i] = ~v[i];
+#if HB_VECTOR_SIZE && 0
+    if (HB_VECTOR_SIZE && 0 == (byte_size * 8) % HB_VECTOR_SIZE)
+      for (unsigned int i = 0; i < ARRAY_LENGTH (u.vec); i++)
+	r.u.vec[i] = ~u.vec[i];
+    else
+#endif
+    for (unsigned int i = 0; i < ARRAY_LENGTH (u.v); i++)
+      r.u.v[i] = ~u.v[i];
     return r;
   }
 
   private:
   static_assert (byte_size / sizeof (elt_t) * sizeof (elt_t) == byte_size, "");
-  elt_t v[byte_size / sizeof (elt_t)];
-};
-
-/* The `vector_size' attribute was introduced in gcc 3.1. */
-#if defined( __GNUC__ ) && ( __GNUC__ >= 4 )
-#define HAVE_VECTOR_SIZE 1
+  union {
+    elt_t v[byte_size / sizeof (elt_t)];
+#if HB_VECTOR_SIZE
+    typedef unsigned long vec_t __attribute__((vector_size (HB_VECTOR_SIZE / 8)));
+    vec_t vec[byte_size / sizeof (vec_t)];
 #endif
+  } u;
+};
 
 
 /* Global runtime options. */
@@ -1089,46 +1232,7 @@ round (double x)
 #endif
 
 
-/*
- * Null objects
- */
-
-/* Global nul-content Null pool.  Enlarge as necessary. */
-
-#define HB_NULL_POOL_SIZE 264
-static_assert (HB_NULL_POOL_SIZE % sizeof (void *) == 0, "Align HB_NULL_POOL_SIZE.");
-
-#ifdef HB_NO_VISIBILITY
-static
-#else
-extern HB_INTERNAL
-#endif
-const void * const _hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)]
-#ifdef HB_NO_VISIBILITY
-= {}
-#endif
-;
-
-/* Generic nul-content Null objects. */
-template <typename Type>
-static inline const Type& Null (void) {
-  static_assert (sizeof (Type) <= HB_NULL_POOL_SIZE, "Increase HB_NULL_POOL_SIZE.");
-  return *reinterpret_cast<const Type *> (_hb_NullPool);
-}
-#define Null(Type) Null<Type>()
-
-/* Specializaiton for arbitrary-content arbitrary-sized Null objects. */
-#define DEFINE_NULL_DATA(Namespace, Type, data) \
-} /* Close namespace. */ \
-static const char _Null##Type[sizeof (Namespace::Type) + 1] = data; /* +1 is for nul-termination in data */ \
-template <> \
-/*static*/ inline const Namespace::Type& Null<Namespace::Type> (void) { \
-  return *reinterpret_cast<const Namespace::Type *> (_Null##Type); \
-} \
-namespace Namespace { \
-/* The following line really exists such that we end in a place needing semicolon */ \
-static_assert (Namespace::Type::min_size + 1 <= sizeof (_Null##Type), "Null pool too small.  Enlarge.")
-
+HB_INTERNAL unsigned int _hb_prime_for (unsigned int shift);
 
 
 #endif /* HB_PRIVATE_HH */

@@ -46,11 +46,6 @@
 #include "hb-ot-name-table.hh"
 
 
-#ifndef HB_NO_VISIBILITY
-const void * const _hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)] = {};
-#endif
-
-
 hb_ot_layout_t *
 _hb_ot_layout_create (hb_face_t *face)
 {
@@ -1104,8 +1099,7 @@ struct hb_get_subtables_context_t :
   inline return_t dispatch (const T &obj)
   {
     hb_applicable_t *entry = array.push();
-    if (likely (entry))
-      entry->init (&obj, apply_to<T>);
+    entry->init (&obj, apply_to<T>);
     return HB_VOID;
   }
   static return_t default_return_value (void) { return HB_VOID; }
@@ -1126,7 +1120,7 @@ apply_forward (OT::hb_ot_apply_context_t *c,
 {
   bool ret = false;
   hb_buffer_t *buffer = c->buffer;
-  while (buffer->idx < buffer->len && !buffer->in_error)
+  while (buffer->idx < buffer->len && buffer->successful)
   {
     bool applied = false;
     if (accel.may_have (buffer->cur().codepoint) &&

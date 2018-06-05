@@ -99,7 +99,7 @@ struct post
     }
 
     post_prime->version.major.set (3); // Version 3 does not have any glyph names.
-    bool result = hb_subset_plan_add_table (plan, HB_OT_TAG_post, post_prime_blob);
+    bool result = plan->add_table (HB_OT_TAG_post, post_prime_blob);
     hb_blob_destroy (post_prime_blob);
 
     return result;
@@ -109,12 +109,13 @@ struct post
   {
     inline void init (hb_face_t *face)
     {
+      index_to_offset.init ();
+
       blob = Sanitizer<post>().sanitize (face->reference_table (HB_OT_TAG_post));
       const post *table = blob->as<post> ();
       unsigned int table_length = blob->length;
 
       version = table->version.to_int ();
-      index_to_offset.init ();
       if (version != 0x00020000)
         return;
 
@@ -125,12 +126,7 @@ struct post
 
       const uint8_t *end = (uint8_t *) table + table_length;
       for (const uint8_t *data = pool; data < end && data + *data <= end; data += 1 + *data)
-      {
-	uint32_t *offset = index_to_offset.push ();
-	if (unlikely (!offset))
-	  break;
-	*offset = data - pool;
-      }
+	index_to_offset.push (data - pool);
     }
     inline void fini (void)
     {
