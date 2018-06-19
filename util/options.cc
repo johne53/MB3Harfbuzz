@@ -643,8 +643,6 @@ font_options_t::get_font (void) const
   if (font)
     return font;
 
-  hb_blob_t *blob = nullptr;
-
   /* Create the blob */
   if (!font_file)
     fail (true, "No font file set");
@@ -663,13 +661,17 @@ font_options_t::get_font (void) const
 	      strerror (errno));
       g_string_append_len (gs, buf, ret);
     }
+    unsigned int len = gs->len;
     char *font_data = g_string_free (gs, false);
-    blob = hb_blob_create (font_data, gs->len,
+    blob = hb_blob_create (font_data, len,
 			   HB_MEMORY_MODE_WRITABLE, font_data,
 			   (hb_destroy_func_t) g_free);
   } else {
     blob = hb_blob_create_from_file (font_file);
   }
+
+  if (blob == hb_blob_get_empty ())
+    fail (false, "No such file or directory");
 
   /* Create the face */
   hb_face_t *face = hb_face_create (blob, face_index);

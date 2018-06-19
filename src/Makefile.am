@@ -105,6 +105,17 @@ endif
 DIST_SUBDIRS += hb-ucdn
 
 
+BUILT_SOURCES += \
+	hb-version.h
+
+$(srcdir)/hb-version.h: hb-version.h.in $(top_srcdir)/configure.ac
+	$(AM_V_GEN) $(SED) \
+		-e 's/[@]HB_VERSION_MAJOR@/$(HB_VERSION_MAJOR)/' \
+		-e 's/[@]HB_VERSION_MINOR@/$(HB_VERSION_MINOR)/' \
+		-e 's/[@]HB_VERSION_MICRO@/$(HB_VERSION_MICRO)/' \
+		-e 's/[@]HB_VERSION@/$(HB_VERSION)/' \
+		"$<" > "$@" || ($(RM) "$@"; false)
+
 # Put the library together
 
 HBLIBS += $(HBNONPCLIBS)
@@ -147,7 +158,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = harfbuzz.pc
 cmakedir = $(libdir)/cmake/harfbuzz
 cmake_DATA = harfbuzz-config.cmake
-EXTRA_DIST += harfbuzz.pc.in harfbuzz-config.cmake.in
+EXTRA_DIST += hb-version.h.in harfbuzz.pc.in harfbuzz-config.cmake.in
 
 lib_LTLIBRARIES += libharfbuzz-subset.la
 libharfbuzz_subset_la_SOURCES = $(HB_SUBSET_sources)
@@ -266,13 +277,13 @@ endif
 check: $(DEF_FILES) # For check-symbols.sh
 CLEANFILES += $(DEF_FILES)
 harfbuzz.def: $(HBHEADERS) $(HBNODISTHEADERS)
-	$(AM_V_GEN) headers="$^" $(srcdir)/gen-def.py $@
+	$(AM_V_GEN) headers="$^" $(srcdir)/gen-def.py "$@"
 harfbuzz-subset.def: $(HB_SUBSET_headers)
-	$(AM_V_GEN) headers="$^" $(srcdir)/gen-def.py $@
+	$(AM_V_GEN) headers="$^" $(srcdir)/gen-def.py "$@"
 harfbuzz-icu.def: $(HB_ICU_headers)
-	$(AM_V_GEN) headers="$^" $(srcdir)/gen-def.py $@
+	$(AM_V_GEN) headers="$^" $(srcdir)/gen-def.py "$@"
 harfbuzz-gobject.def: $(HB_GOBJECT_headers)
-	$(AM_V_GEN) headers="$^" $(srcdir)/gen-def.py $@
+	$(AM_V_GEN) headers="$^" $(srcdir)/gen-def.py "$@"
 
 
 GENERATORS = \
@@ -286,16 +297,16 @@ EXTRA_DIST += $(GENERATORS)
 unicode-tables: arabic-table indic-table use-table
 
 arabic-table: gen-arabic-table.py ArabicShaping.txt UnicodeData.txt Blocks.txt
-	$(AM_V_GEN) $(builddir)/$^ > hb-ot-shape-complex-arabic-table.hh \
-	|| ($(RM) hb-ot-shape-complex-arabic-table.hh; false)
+	$(AM_V_GEN) $(builddir)/$^ > $(srcdir)/hb-ot-shape-complex-arabic-table.hh \
+	|| ($(RM) $(srcdir)/hb-ot-shape-complex-arabic-table.hh; false)
 
 indic-table: gen-indic-table.py IndicSyllabicCategory.txt IndicPositionalCategory.txt Blocks.txt
-	$(AM_V_GEN) $(builddir)/$^ > hb-ot-shape-complex-indic-table.cc \
-	|| ($(RM) hb-ot-shape-complex-indic-table.cc; false)
+	$(AM_V_GEN) $(builddir)/$^ > $(srcdir)/hb-ot-shape-complex-indic-table.cc \
+	|| ($(RM) $(srcdir)/hb-ot-shape-complex-indic-table.cc; false)
 
 use-table: gen-use-table.py IndicSyllabicCategory.txt IndicPositionalCategory.txt UnicodeData.txt Blocks.txt
-	$(AM_V_GEN) $(builddir)/$^ > hb-ot-shape-complex-use-table.cc \
-	|| ($(RM) hb-ot-shape-complex-use-table.cc; false)
+	$(AM_V_GEN) $(builddir)/$^ > $(srcdir)/hb-ot-shape-complex-use-table.cc \
+	|| ($(RM) $(srcdir)/hb-ot-shape-complex-use-table.cc; false)
 
 built-sources: $(BUILT_SOURCES)
 

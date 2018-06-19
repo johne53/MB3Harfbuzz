@@ -7,7 +7,8 @@ HarfBuzz release walk-through checklist:
 
      Document them in NEWS.  All API and API semantic changes should be clearly
      marked as API additions, API changes, or API deletions.  Document
-     deprecations.
+     deprecations.  Ensure all new API / deprecations are in listed correctly in
+     docs/harfbuzz-sections.txt
 
      If there's a backward-incompatible API change (including deletions for API
      used anywhere), that's a release blocker.  Do NOT release.
@@ -28,8 +29,9 @@ HarfBuzz release walk-through checklist:
 7. "make release-files".  Enter your GPG password.  This creates a sha256 hash
    and signs it.
 
-8. Now that you have release files built, commit NEWS and configure.ac changes.
-   The commit message is simply the release number.  Eg. "1.4.7"
+8. Now that you have release files built, commit NEWS and configure.ac changes,
+   as well as any REPLACEME changes you made.  The commit message is simply the
+   release number.  Eg. "1.4.7"
 
 9. Tag the release and sign it: Eg. "git tag -s 1.4.7 -m 1.4.7".  Enter your
    GPG password again.
@@ -38,11 +40,13 @@ HarfBuzz release walk-through checklist:
 
    a. Put contents of [this](https://drive.google.com/open?id=0B3_fQkxDZZXXbWltRGd5bjVrUDQ) on your `~/.local/i686-w64-mingw32`,
 
-   b. Run `../mingw32.sh --with-uniscribe` script (available below) to configure harfbuzz with mingw in a subdirector (eg. winbuild/),
+   b. Run `../mingw32.sh --with-uniscribe` script to configure harfbuzz with mingw
+   in a subdirector (eg. winbuild/),
 
    c. make
 
-   d. Back in the parent directory, run `./UPDATE.sh` (available below) to build win32 bundle.
+   d. Back in the parent directory, run `./UPDATE.sh`(available below) to build win32
+      bundle.
 
 11. Copy all artefacts to users.freedesktop.org and move them into
     `/srv/www.freedesktop.org/www/software/harfbuzz/release` There should be four
