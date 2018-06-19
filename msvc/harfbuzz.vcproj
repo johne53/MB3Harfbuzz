@@ -178,7 +178,6 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description=""
 				CommandLine=""
 			/>
 			<Tool
@@ -316,6 +315,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\hb-map.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\hb-ot-color.cc"
 				>
 			</File>
@@ -420,6 +423,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\hb-static.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\hb-unicode.cc"
 				>
 			</File>
@@ -462,6 +469,10 @@
 			</File>
 			<File
 				RelativePath="..\src\hb-icu.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\hb-map.h"
 				>
 			</File>
 			<File
