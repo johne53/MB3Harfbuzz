@@ -1107,11 +1107,25 @@ struct HbOpXor
 
 /* Compiler-assisted vectorization. */
 
+/*
+ * Disable vectorization for now.  To correctly use them, we should
+ * use posix_memalign() to allocate them.  Otherwise, can cause
+ * misaligned access.
+ *
+ * https://bugs.chromium.org/p/chromium/issues/detail?id=860184
+ */
+#if !defined(HB_VECTOR_SIZE)
+#  define HB_VECTOR_SIZE 0
+#endif
+
+
 /* The `vector_size' attribute was introduced in gcc 3.1. */
-#if defined( __GNUC__ ) && ( __GNUC__ >= 4 )
-#define HB_VECTOR_SIZE 128
-#elif !defined(HB_VECTOR_SIZE)
-#define HB_VECTOR_SIZE 0
+#if !defined(HB_VECTOR_SIZE)
+#  if defined( __GNUC__ ) && ( __GNUC__ >= 4 )
+#    define HB_VECTOR_SIZE 128
+#  else
+#    define HB_VECTOR_SIZE 0
+#  endif
 #endif
 
 /* Type behaving similar to vectorized vars defined using __attribute__((vector_size(...))). */
@@ -1228,13 +1242,14 @@ struct hb_bytes_t
 /* fallback for round() */
 #if !defined (HAVE_ROUND) && !defined (HAVE_DECL_ROUND)
 static inline double
-round (double x)
+_hb_round (double x)
 {
   if (x >= 0)
     return floor (x + 0.5);
   else
     return ceil (x - 0.5);
 }
+#define round(x) _hb_round(x)
 #endif
 
 
