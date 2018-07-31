@@ -96,11 +96,9 @@ struct sbix
   {
     inline void init (hb_face_t *face)
     {
-      /* XXX Using public API instead of private method to avoid link problem in dump_emoji.
-       * Kill that! */
-      sbix_blob = OT::Sanitizer<OT::sbix>(hb_face_get_glyph_count (face)/*face->get_num_glyphs ()*/).sanitize (face->reference_table (HB_OT_TAG_sbix));
+      sbix_blob = hb_sanitize_context_t().reference_table<sbix> (face);
       sbix_len = hb_blob_get_length (sbix_blob);
-      sbix_table = sbix_blob->as<OT::sbix> ();
+      sbix_table = sbix_blob->as<sbix> ();
     }
 
     inline void fini (void)

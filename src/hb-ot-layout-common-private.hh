@@ -41,6 +41,15 @@
 #ifndef HB_MAX_CONTEXT_LENGTH
 #define HB_MAX_CONTEXT_LENGTH	64
 #endif
+#ifndef HB_CLOSURE_MAX_STAGES
+/*
+ * The maximum number of times a lookup can be applied during shaping.
+ * Used to limit the number of iterations of the closure algorithm.
+ * This must be larger than the number of times add_pause() is
+ * called in a collect_features call of any shaper.
+ */
+#define HB_CLOSURE_MAX_STAGES	32
+#endif
 
 
 namespace OT {
@@ -478,6 +487,20 @@ struct FeatureParams
     return Null(FeatureParamsSize);
   }
 
+  inline const FeatureParamsStylisticSet& get_stylistic_set_params (hb_tag_t tag) const
+  {
+    if ((tag & 0xFFFF0000u) == HB_TAG ('s','s','\0','\0')) /* ssXX */
+      return u.stylisticSet;
+    return Null(FeatureParamsStylisticSet);
+  }
+
+  inline const FeatureParamsCharacterVariants& get_character_variants_params (hb_tag_t tag) const
+  {
+    if ((tag & 0xFFFF0000u) == HB_TAG ('c','v','\0','\0')) /* cvXX */
+      return u.characterVariants;
+    return Null(FeatureParamsCharacterVariants);
+  }
+
   private:
   union {
   FeatureParamsSize			size;
@@ -594,6 +617,14 @@ struct Lookup
   inline OffsetArrayOf<SubTableType>& get_subtables (void)
   { return CastR<OffsetArrayOf<SubTableType> > (subTable); }
 
+  inline unsigned int get_size (void) const
+  {
+    const HBUINT16 &markFilteringSet = StructAfter<const HBUINT16> (subTable);
+    if (lookupFlag & LookupFlag::UseMarkFilteringSet)
+      return (const char *) &StructAfter<const char> (markFilteringSet) - (const char *) this;
+    return (const char *) &markFilteringSet - (const char *) this;
+  }
+
   inline unsigned int get_type (void) const { return lookupType; }
 
   /* lookup_props is a 32-bit integer where the lower 16-bit is LookupFlag and
@@ -636,6 +667,7 @@ struct Lookup
     if (unlikely (!subTable.serialize (c, num_subtables))) return_trace (false);
     if (lookupFlag & LookupFlag::UseMarkFilteringSet)
     {
+      if (unlikely (!c->extend (*this))) return_trace (false);
       HBUINT16 &markFilteringSet = StructAfter<HBUINT16> (subTable);
       markFilteringSet.set (lookup_props >> 16);
     }
