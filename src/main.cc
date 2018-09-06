@@ -25,9 +25,9 @@
  */
 
 #include "hb-static.cc"
-#include "hb-open-file-private.hh"
+#include "hb-open-file.hh"
 #include "hb-ot-layout-gdef-table.hh"
-#include "hb-ot-layout-gsubgpos-private.hh"
+#include "hb-ot-layout-gsubgpos.hh"
 
 #ifdef HAVE_GLIB
 #include <glib.h>
@@ -53,7 +53,7 @@ main (int argc, char **argv)
 
   hb_blob_t *font_blob = hb_sanitize_context_t().sanitize_blob<OpenTypeFontFile> (blob);
   const OpenTypeFontFile* sanitized = font_blob->as<OpenTypeFontFile> ();
-  if (sanitized == &Null(OpenTypeFontFile))
+  if (!font_blob->data)
   {
     printf ("Sanitization of the file wasn't successful. Exit");
     return 1;
