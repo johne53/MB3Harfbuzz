@@ -323,6 +323,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\hb-ot-face.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\hb-ot-font.cc"
 				>
 			</File>
