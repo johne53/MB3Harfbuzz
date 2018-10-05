@@ -5,11 +5,11 @@ require "../local-paths.lib";
 
 $api_version = "1.0";
 $pango_current_minus_age = 0;
-$harfbuzz_version = "1.8.04";
+$harfbuzz_version = "1.8.09";
 $major = 1;
 $minor = 8;
-$micro = 4;
-$interface_age = 4;
+$micro = 9;
+$interface_age = 9;
 $current_minus_age = 0;
 $exec_prefix = "lib";
 
