@@ -379,10 +379,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\hb-ot-shape-complex-tibetan.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\hb-ot-shape-complex-use-table.cc"
 				>
 			</File>
