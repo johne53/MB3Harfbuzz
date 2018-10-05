@@ -629,6 +629,8 @@ struct InsertionSubtable
 	  buffer->skip_glyph ();
 
 	buffer->move_to (end + count);
+
+	buffer->unsafe_to_break_from_outbuffer (mark, MIN (buffer->idx + 1, buffer->len));
       }
 
       if (entry->data.currentInsertIndex != 0xFFFF)
@@ -889,6 +891,8 @@ struct Chain
 
       (void) c->buffer->message (c->font, "end chain subtable %d", c->lookup_index);
 
+      if (unlikely (!c->buffer->successful)) return;
+
     skip:
       subtable = &StructAfter<ChainSubtable> (*subtable);
       c->set_lookup_index (c->lookup_index + 1);
@@ -943,14 +947,18 @@ struct morx
 {
   static const hb_tag_t tableTag = HB_AAT_TAG_morx;
 
+  inline bool has_data (void) const { return version != 0; }
+
   inline void apply (hb_aat_apply_context_t *c) const
   {
+    if (unlikely (!c->buffer->successful)) return;
     c->set_lookup_index (0);
     const Chain *chain = &firstChain;
     unsigned int count = chainCount;
     for (unsigned int i = 0; i < count; i++)
     {
       chain->apply (c);
+      if (unlikely (!c->buffer->successful)) return;
       chain = &StructAfter<Chain> (*chain);
     }
   }

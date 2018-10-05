@@ -210,7 +210,7 @@ create_ct_font (CGFontRef cg_font, CGFloat font_size)
   }
 
   CFURLRef original_url = nullptr;
-#if MAC_OS_X_VERSION_MIN_REQUIRED < 1060
+#if TARGET_OS_MAC && MAC_OS_X_VERSION_MIN_REQUIRED < 1060
   ATSFontRef atsFont;
   FSRef fsref;
   OSStatus status;
@@ -240,7 +240,7 @@ create_ct_font (CGFontRef cg_font, CGFloat font_size)
        * process in Blink. This can be detected by the new file URL location
        * that the newly found font points to. */
       CFURLRef new_url = nullptr;
-#if MAC_OS_X_VERSION_MIN_REQUIRED < 1060
+#if TARGET_OS_MAC && MAC_OS_X_VERSION_MIN_REQUIRED < 1060
       atsFont = CTFontGetPlatformFont (new_ct_font, NULL);
       status = ATSFontGetFileReference (atsFont, &fsref);
       if (status == noErr)
@@ -626,7 +626,7 @@ _hb_coretext_shape (hb_shape_plan_t    *shape_plan,
   CGFloat y_mult = (CGFloat) font->y_scale / ct_font_size;
 
   /* Attach marks to their bases, to match the 'ot' shaper.
-   * Adapted from hb-ot-shape:hb_form_clusters().
+   * Adapted from a very old version of hb-ot-shape:hb_form_clusters().
    * Note that this only makes us be closer to the 'ot' shaper,
    * but by no means the same.  For example, if there's
    * B1 M1 B2 M2, and B1-B2 form a ligature, M2's cluster will

@@ -344,10 +344,10 @@ struct hb_ot_apply_context_t :
       match_glyph_data = nullptr;
       matcher.set_match_func (nullptr, nullptr);
       matcher.set_lookup_props (c->lookup_props);
-      /* Ignore ZWNJ if we are matching GSUB context, or matching GPOS. */
+      /* Ignore ZWNJ if we are matching GPOS, or matching GSUB context and asked to. */
       matcher.set_ignore_zwnj (c->table_index == 1 || (context_match && c->auto_zwnj));
-      /* Ignore ZWJ if we are matching GSUB context, or matching GPOS, or if asked to. */
-      matcher.set_ignore_zwj  (c->table_index == 1 || (context_match || c->auto_zwj));
+      /* Ignore ZWJ if we are matching context, or asked to. */
+      matcher.set_ignore_zwj  (context_match || c->auto_zwj);
       matcher.set_mask (context_match ? -1 : c->lookup_mask);
     }
     inline void set_lookup_props (unsigned int lookup_props)
@@ -506,20 +506,21 @@ struct hb_ot_apply_context_t :
 			auto_zwnj (true),
 			auto_zwj (true),
 			random (false),
-			random_state (1) {}
+			random_state (1) { init_iters (); }
 
-  inline void set_lookup_mask (hb_mask_t mask) { lookup_mask = mask; }
-  inline void set_auto_zwj (bool auto_zwj_) { auto_zwj = auto_zwj_; }
-  inline void set_auto_zwnj (bool auto_zwnj_) { auto_zwnj = auto_zwnj_; }
-  inline void set_random (bool random_) { random = random_; }
-  inline void set_recurse_func (recurse_func_t func) { recurse_func = func; }
-  inline void set_lookup_index (unsigned int lookup_index_) { lookup_index = lookup_index_; }
-  inline void set_lookup_props (unsigned int lookup_props_)
+  inline void init_iters (void)
   {
-    lookup_props = lookup_props_;
     iter_input.init (this, false);
     iter_context.init (this, true);
   }
+
+  inline void set_lookup_mask (hb_mask_t mask) { lookup_mask = mask; init_iters (); }
+  inline void set_auto_zwj (bool auto_zwj_) { auto_zwj = auto_zwj_; init_iters (); }
+  inline void set_auto_zwnj (bool auto_zwnj_) { auto_zwnj = auto_zwnj_; init_iters (); }
+  inline void set_random (bool random_) { random = random_; }
+  inline void set_recurse_func (recurse_func_t func) { recurse_func = func; }
+  inline void set_lookup_index (unsigned int lookup_index_) { lookup_index = lookup_index_; }
+  inline void set_lookup_props (unsigned int lookup_props_) { lookup_props = lookup_props_; init_iters (); }
 
   inline uint32_t random_number (void)
   {
@@ -730,7 +731,6 @@ static inline bool match_input (hb_ot_apply_context_t *c,
 				const void *match_data,
 				unsigned int *end_offset,
 				unsigned int match_positions[HB_MAX_CONTEXT_LENGTH],
-				bool *p_is_mark_ligature = nullptr,
 				unsigned int *p_total_component_count = nullptr)
 {
   TRACE_APPLY (nullptr);
@@ -766,8 +766,6 @@ static inline bool match_input (hb_ot_apply_context_t *c,
    *     mark-filtering rules, then allow.
    *     https://github.com/harfbuzz/harfbuzz/issues/545
    */
-
-  bool is_mark_ligature = _hb_glyph_info_is_mark (&buffer->cur());
 
   unsigned int total_component_count = 0;
   total_component_count += _hb_glyph_info_get_lig_num_comps (&buffer->cur());
@@ -835,14 +833,10 @@ static inline bool match_input (hb_ot_apply_context_t *c,
 	return_trace (false);
     }
 
-    is_mark_ligature = is_mark_ligature && _hb_glyph_info_is_mark (&buffer->info[skippy_iter.idx]);
     total_component_count += _hb_glyph_info_get_lig_num_comps (&buffer->info[skippy_iter.idx]);
   }
 
   *end_offset = skippy_iter.idx - buffer->idx + 1;
-
-  if (p_is_mark_ligature)
-    *p_is_mark_ligature = is_mark_ligature;
 
   if (p_total_component_count)
     *p_total_component_count = total_component_count;
@@ -854,7 +848,6 @@ static inline bool ligate_input (hb_ot_apply_context_t *c,
 				 unsigned int match_positions[HB_MAX_CONTEXT_LENGTH], /* Including the first glyph */
 				 unsigned int match_length,
 				 hb_codepoint_t lig_glyph,
-				 bool is_mark_ligature,
 				 unsigned int total_component_count)
 {
   TRACE_APPLY (nullptr);
@@ -863,11 +856,15 @@ static inline bool ligate_input (hb_ot_apply_context_t *c,
 
   buffer->merge_clusters (buffer->idx, buffer->idx + match_length);
 
-  /*
-   * - If it *is* a mark ligature, we don't allocate a new ligature id, and leave
+  /* - If a base and one or more marks ligate, consider that as a base, NOT
+   *   ligature, such that all following marks can still attach to it.
+   *   https://github.com/harfbuzz/harfbuzz/issues/1109
+   *
+   * - If all components of the ligature were marks, we call this a mark ligature.
+   *   If it *is* a mark ligature, we don't allocate a new ligature id, and leave
    *   the ligature to keep its old ligature id.  This will allow it to attach to
    *   a base ligature in GPOS.  Eg. if the sequence is: LAM,LAM,SHADDA,FATHA,HEH,
-   *   and LAM,LAM,HEH for a ligature, they will leave SHADDA and FATHA wit a
+   *   and LAM,LAM,HEH for a ligature, they will leave SHADDA and FATHA with a
    *   ligature id and component value of 2.  Then if SHADDA,FATHA form a ligature
    *   later, we don't want them to lose their ligature id/component, otherwise
    *   GPOS will fail to correctly position the mark ligature on top of the
@@ -891,13 +888,24 @@ static inline bool ligate_input (hb_ot_apply_context_t *c,
    *   https://bugzilla.gnome.org/show_bug.cgi?id=437633
    */
 
-  unsigned int klass = is_mark_ligature ? 0 : HB_OT_LAYOUT_GLYPH_PROPS_LIGATURE;
-  unsigned int lig_id = is_mark_ligature ? 0 : _hb_allocate_lig_id (buffer);
+  bool is_base_ligature = _hb_glyph_info_is_base_glyph (&buffer->info[match_positions[0]]);
+  bool is_mark_ligature = _hb_glyph_info_is_mark (&buffer->info[match_positions[0]]);
+  for (unsigned int i = 1; i < count; i++)
+    if (!_hb_glyph_info_is_mark (&buffer->info[match_positions[i]]))
+    {
+      is_base_ligature = false;
+      is_mark_ligature = false;
+      break;
+    }
+  bool is_ligature = !is_base_ligature && !is_mark_ligature;
+
+  unsigned int klass = is_ligature ? HB_OT_LAYOUT_GLYPH_PROPS_LIGATURE : 0;
+  unsigned int lig_id = is_ligature ? _hb_allocate_lig_id (buffer) : 0;
   unsigned int last_lig_id = _hb_glyph_info_get_lig_id (&buffer->cur());
   unsigned int last_num_components = _hb_glyph_info_get_lig_num_comps (&buffer->cur());
   unsigned int components_so_far = last_num_components;
 
-  if (!is_mark_ligature)
+  if (is_ligature)
   {
     _hb_glyph_info_set_lig_props_for_ligature (&buffer->cur(), lig_id, total_component_count);
     if (_hb_glyph_info_get_general_category (&buffer->cur()) == HB_UNICODE_GENERAL_CATEGORY_NON_SPACING_MARK)
@@ -911,7 +919,8 @@ static inline bool ligate_input (hb_ot_apply_context_t *c,
   {
     while (buffer->idx < match_positions[i] && buffer->successful)
     {
-      if (!is_mark_ligature) {
+      if (is_ligature)
+      {
         unsigned int this_comp = _hb_glyph_info_get_lig_comp (&buffer->cur());
 	if (this_comp == 0)
 	  this_comp = last_num_components;

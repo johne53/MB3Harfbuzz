@@ -36,12 +36,12 @@
 
 
 /**
- * hb_face_count: Get number of faces on the blob
- * @blob:
+ * hb_face_count:
+ * @blob: a blob.
  *
+ * Get number of faces in a blob.
  *
- *
- * Return value: Number of faces on the blob
+ * Return value: Number of faces in @blob
  *
  * Since: 1.7.7
  **/
@@ -325,6 +325,8 @@ hb_face_make_immutable (hb_face_t *face)
 {
   if (unlikely (hb_object_is_inert (face)))
     return;
+  if (face->immutable)
+    return;
 
   face->immutable = true;
 }
@@ -488,6 +490,9 @@ hb_face_get_glyph_count (const hb_face_t *face)
 /**
  * hb_face_get_table_tags:
  * @face: a face.
+ * @start_offset: index of first tag to return.
+ * @table_count: input length of @table_tags array, output number of items written.
+ * @table_tags: array to write tags into.
  *
  * Retrieves table tags for a face, if possible.
  *
@@ -683,7 +688,7 @@ _hb_face_builder_reference_table (hb_face_t *face, hb_tag_t tag, void *user_data
  * After tables are added to the face, it can be compiled to a binary
  * font file by calling hb_face_reference_blob().
  *
- * Return value: (transfer full) New face.
+ * Return value: (transfer full): New face.
  *
  * Since: 1.9.0
  **/

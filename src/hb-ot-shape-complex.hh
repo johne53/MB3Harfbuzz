@@ -29,9 +29,9 @@
 
 #include "hb.hh"
 
+#include "hb-ot-layout.hh"
 #include "hb-ot-shape.hh"
 #include "hb-ot-shape-normalize.hh"
-
 
 
 /* buffer var allocations, used by complex shapers */
@@ -59,7 +59,6 @@ enum hb_ot_shape_zero_width_marks_type_t {
   HB_COMPLEX_SHAPER_IMPLEMENT (myanmar) \
   HB_COMPLEX_SHAPER_IMPLEMENT (myanmar_old) \
   HB_COMPLEX_SHAPER_IMPLEMENT (thai) \
-  HB_COMPLEX_SHAPER_IMPLEMENT (tibetan) \
   HB_COMPLEX_SHAPER_IMPLEMENT (use) \
   /* ^--- Add new shapers here */
 
@@ -147,13 +146,11 @@ struct hb_ot_complex_shaper_t
 		       hb_buffer_t              *buffer,
 		       hb_font_t                *font);
 
-  /* disable_otl()
-   * Called during shape().
-   * If set and returns true, GDEF/GSUB/GPOS of the font are ignored
-   * and fallback operations used.
-   * May be nullptr.
+  /* gpos_tag()
+   * If not HB_TAG_NONE, then must match found GPOS script tag for
+   * GPOS to be applied.  Otherwise, fallback positioning will be used.
    */
-  bool (*disable_otl) (const hb_ot_shape_plan_t *plan);
+  hb_tag_t gpos_tag;
 
   /* reorder_marks()
    * Called during shape().
@@ -234,24 +231,11 @@ hb_ot_shape_complex_categorize (const hb_ot_shape_planner_t *planner)
       return &_hb_ot_complex_shaper_hangul;
 
 
-    /* Unicode-2.0 additions */
-    case HB_SCRIPT_TIBETAN:
-
-      return &_hb_ot_complex_shaper_tibetan;
-
-
     /* Unicode-1.1 additions */
     case HB_SCRIPT_HEBREW:
 
       return &_hb_ot_complex_shaper_hebrew;
 
-
-    /* ^--- Add new shapers here */
-
-#if 0
-    /* Unicode-4.1 additions */
-    case HB_SCRIPT_NEW_TAI_LUE:
-#endif
 
     /* Unicode-1.1 additions */
     case HB_SCRIPT_BENGALI:
@@ -291,7 +275,7 @@ hb_ot_shape_complex_categorize (const hb_ot_shape_planner_t *planner)
 
 
     /* Unicode-2.0 additions */
-    //case HB_SCRIPT_TIBETAN:
+    case HB_SCRIPT_TIBETAN:
 
     /* Unicode-3.0 additions */
     //case HB_SCRIPT_MONGOLIAN:
@@ -359,9 +343,9 @@ hb_ot_shape_complex_categorize (const hb_ot_shape_planner_t *planner)
 
     /* Unicode-8.0 additions */
     case HB_SCRIPT_AHOM:
-    //case HB_SCRIPT_MULTANI:
 
     /* Unicode-9.0 additions */
+    //case HB_SCRIPT_ADLAM:
     case HB_SCRIPT_BHAIKSUKI:
     case HB_SCRIPT_MARCHEN:
     case HB_SCRIPT_NEWA:
@@ -374,7 +358,9 @@ hb_ot_shape_complex_categorize (const hb_ot_shape_planner_t *planner)
     /* Unicode-11.0 additions */
     case HB_SCRIPT_DOGRA:
     case HB_SCRIPT_GUNJALA_GONDI:
+    //case HB_SCRIPT_HANIFI_ROHINGYA:
     case HB_SCRIPT_MAKASAR:
+    //case HB_SCRIPT_SOGDIAN:
 
       /* If the designer designed the font for the 'DFLT' script,
        * (or we ended up arbitrarily pick 'latn'), use the default shaper.

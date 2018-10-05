@@ -35,6 +35,10 @@
 #include "config.h"
 #endif
 
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include "hb.h"
 #define HB_H_IN
 #ifdef HAVE_OT
@@ -237,7 +241,9 @@ struct _hb_alignof
 #    undef _WIN32_WINNT
 #  endif
 #  ifndef _WIN32_WINNT
-#    define _WIN32_WINNT 0x0600
+#    if !defined(WINAPI_FAMILY) || !(WINAPI_FAMILY==WINAPI_FAMILY_PC_APP || WINAPI_FAMILY==WINAPI_FAMILY_PHONE_APP)
+#      define _WIN32_WINNT 0x0600
+#    endif
 #  endif
 #  ifndef WIN32_LEAN_AND_MEAN
 #    define WIN32_LEAN_AND_MEAN 1

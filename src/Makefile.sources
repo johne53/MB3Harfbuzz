@@ -53,6 +53,7 @@ HB_BASE_sources = \
 	hb-static.cc \
 	hb-string-array.hh \
 	hb-unicode.hh \
+	hb-unicode-emoji-table.hh \
 	hb-unicode.cc \
 	hb-vector.hh \
 	hb-utf.hh \
@@ -137,7 +138,6 @@ HB_OT_sources = \
 	hb-ot-shape-complex-myanmar.hh \
 	hb-ot-shape-complex-myanmar.cc \
 	hb-ot-shape-complex-thai.cc \
-	hb-ot-shape-complex-tibetan.cc \
 	hb-ot-shape-complex-use.cc \
 	hb-ot-shape-complex-use.hh \
 	hb-ot-shape-complex-use-table.cc \

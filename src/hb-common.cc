@@ -361,7 +361,14 @@ hb_language_to_string (hb_language_t language)
 /**
  * hb_language_get_default:
  *
+ * Get default language from current locale.
  *
+ * Note that the first time this function is called, it calls
+ * "setlocale (LC_CTYPE, nullptr)" to fetch current locale.  The underlying
+ * setlocale function is, in many implementations, NOT threadsafe.  To avoid
+ * problems, call this function once before multiple threads can call it.
+ * This function is only used from hb_buffer_guess_segment_properties() by
+ * HarfBuzz itself.
  *
  * Return value: (transfer none):
  *
@@ -1065,7 +1072,7 @@ hb_variation_to_string (hb_variation_t *variation,
   while (len && s[len - 1] == ' ')
     len--;
   s[len++] = '=';
-  len += MAX (0, snprintf (s + len, ARRAY_LENGTH (s) - len, "%g", variation->value));
+  len += MAX (0, snprintf (s + len, ARRAY_LENGTH (s) - len, "%g", (double) variation->value));
 
   assert (len < ARRAY_LENGTH (s));
   len = MIN (len, size - 1);
