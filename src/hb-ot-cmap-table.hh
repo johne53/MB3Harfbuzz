@@ -495,7 +495,7 @@ struct CmapSubtableLongSegmented
   {
     TRACE_SERIALIZE (this);
     if (unlikely (!c->extend_min (*this))) return_trace (false);
-    Supplier<CmapSubtableLongGroup> supplier (group_data.arrayZ, group_data.len);
+    Supplier<CmapSubtableLongGroup> supplier (group_data.arrayZ(), group_data.len);
     if (unlikely (!groups.serialize (c, supplier, group_data.len))) return_trace (false);
     return true;
   }
@@ -709,9 +709,9 @@ struct VariationSelectorRecord
 
   HBUINT24	varSelector;	/* Variation selector. */
   LOffsetTo<DefaultUVS>
-		defaultUVS;	/* Offset to Default UVS Table. May be 0. */
+		defaultUVS;	/* Offset to Default UVS Table.  May be 0. */
   LOffsetTo<NonDefaultUVS>
-		nonDefaultUVS;	/* Offset to Non-Default UVS Table. May be 0. */
+		nonDefaultUVS;	/* Offset to Non-Default UVS Table.  May be 0. */
   public:
   DEFINE_SIZE_STATIC (11);
 };

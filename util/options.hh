@@ -46,9 +46,7 @@
 #endif
 
 #include <hb.h>
-#ifdef HAVE_OT
 #include <hb-ot.h>
-#endif
 #include <glib.h>
 #include <glib/gprintf.h>
 
@@ -155,6 +153,7 @@ struct shape_options_t : option_group_t
     num_features = 0;
     shapers = nullptr;
     utf8_clusters = false;
+    invisible_glyph = 0;
     cluster_level = HB_BUFFER_CLUSTER_LEVEL_DEFAULT;
     normalize_glyphs = false;
     verify = false;
@@ -185,6 +184,7 @@ struct shape_options_t : option_group_t
 				  (preserve_default_ignorables ? HB_BUFFER_FLAG_PRESERVE_DEFAULT_IGNORABLES : 0) |
 				  (remove_default_ignorables ? HB_BUFFER_FLAG_REMOVE_DEFAULT_IGNORABLES : 0) |
 				  0));
+    hb_buffer_set_invisible_glyph (buffer, invisible_glyph);
     hb_buffer_set_cluster_level (buffer, cluster_level);
     hb_buffer_guess_segment_properties (buffer);
   }
@@ -435,6 +435,7 @@ struct shape_options_t : option_group_t
   unsigned int num_features;
   char **shapers;
   hb_bool_t utf8_clusters;
+  hb_codepoint_t invisible_glyph;
   hb_buffer_cluster_level_t cluster_level;
   hb_bool_t normalize_glyphs;
   hb_bool_t verify;

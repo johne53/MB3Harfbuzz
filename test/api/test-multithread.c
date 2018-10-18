@@ -34,8 +34,8 @@
 #include <hb-ot.h>
 #include <glib.h>
 
-static char *font_path = "fonts/Inconsolata-Regular.abc.ttf";
-static char *text = "abc";
+static const char *font_path = "fonts/Inconsolata-Regular.abc.ttf";
+static const char *text = "abc";
 
 static int num_threads = 30;
 static int num_iters = 200;
@@ -135,7 +135,7 @@ main (int argc, char **argv)
   gchar *default_path = g_strdup (font_path);
 #endif
 
-  char *path = argc > 1 ? argv[1] : (char *) default_path;
+  char *path = argc > 1 && *argv[1] ? argv[1] : (char *) default_path;
   if (argc > 2)
     num_threads = atoi (argv[2]);
   if (argc > 3)
@@ -143,32 +143,28 @@ main (int argc, char **argv)
   if (argc > 4)
     text = argv[4];
 
-  // Dummy call to alleviate _guess_segment_properties thread safety-ness
-  // https://github.com/harfbuzz/harfbuzz/issues/1191
+  /* Dummy call to alleviate _guess_segment_properties thread safety-ness
+   * https://github.com/harfbuzz/harfbuzz/issues/1191 */
   hb_language_get_default ();
 
   hb_blob_t *blob = hb_blob_create_from_file (path);
   if (hb_blob_get_length (blob) == 0)
-  {
-    printf ("The test font is not found.");
-    return 1;
-  }
+    g_error ("Font not found.");
 
   hb_face_t *face = hb_face_create (blob, 0);
   font = hb_font_create (face);
 
-  hb_ot_font_set_funcs (font);
-
+  /* Fill the reference */
   ref_buffer = hb_buffer_create ();
   fill_the_buffer (ref_buffer);
 
+  /* Unnecessary, since version 2 it is ot-font by default */
+  hb_ot_font_set_funcs (font);
   test_body ();
 
-  /* hb-font backed by FreeType functions can only be used from
-   * one thread at a time, because that's FT_Face's MT guarantee.
-   * So, disable this, even though it works "most of the time". */
-  //hb_ft_font_set_funcs (font);
-  //test_body ();
+  /* Test hb-ft in multithread */
+  hb_ft_font_set_funcs (font);
+  test_body ();
 
   hb_buffer_destroy (ref_buffer);
 

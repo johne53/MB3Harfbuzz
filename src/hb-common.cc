@@ -47,8 +47,27 @@ _hb_options_init (void)
   u.i = 0;
   u.opts.initialized = 1;
 
-  char *c = getenv ("HB_OPTIONS");
-  u.opts.uniscribe_bug_compatible = c && strstr (c, "uniscribe-bug-compatible");
+  const char *c = getenv ("HB_OPTIONS");
+  if (c)
+  {
+    while (*c)
+    {
+      const char *p = strchr (c, ':');
+      if (!p)
+        p = c + strlen (c);
+
+#define OPTION(name, symbol) \
+	if (0 == strncmp (c, name, p - c) && strlen (name) == p - c) u.opts.symbol = true;
+
+      OPTION ("uniscribe-bug-compatible", uniscribe_bug_compatible);
+      OPTION ("aat", aat);
+
+#undef OPTION
+
+      c = *p ? p + 1 : p;
+    }
+
+  }
 
   /* This is idempotent and threadsafe. */
   _hb_options.set_relaxed (u.i);
@@ -306,14 +325,14 @@ retry:
 /**
  * hb_language_from_string:
  * @str: (array length=len) (element-type uint8_t): a string representing
- *       ISO 639 language code
+ *       a BCP 47 language tag
  * @len: length of the @str, or -1 if it is %NULL-terminated.
  *
- * Converts @str representing an ISO 639 language code to the corresponding
+ * Converts @str representing a BCP 47 language tag to the corresponding
  * #hb_language_t.
  *
  * Return value: (transfer none):
- * The #hb_language_t corresponding to the ISO 639 language code.
+ * The #hb_language_t corresponding to the BCP 47 language tag.
  *
  * Since: 0.9.2
  **/

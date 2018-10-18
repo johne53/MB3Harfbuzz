@@ -164,7 +164,7 @@ struct RearrangementSubtable
 
     driver_context_t dc (this);
 
-    StateTableDriver<void> driver (machine, c->buffer, c->face);
+    StateTableDriver<EntryData> driver (machine, c->buffer, c->face);
     driver.drive (&dc);
 
     return_trace (dc.ret);
@@ -270,7 +270,7 @@ struct ContextualSubtable
     private:
     bool mark_set;
     unsigned int mark;
-    const UnsizedOffsetListOf<Lookup<GlyphID>, HBUINT32> &subs;
+    const UnsizedOffsetListOf<Lookup<GlyphID>, HBUINT32, false> &subs;
   };
 
   inline bool apply (hb_aat_apply_context_t *c) const
@@ -311,7 +311,7 @@ struct ContextualSubtable
   protected:
   StateTable<EntryData>
 		machine;
-  LOffsetTo<UnsizedOffsetListOf<Lookup<GlyphID>, HBUINT32>, false>
+  LOffsetTo<UnsizedOffsetListOf<Lookup<GlyphID>, HBUINT32, false>, false>
 		substitutionTables;
   public:
   DEFINE_SIZE_STATIC (20);
@@ -365,7 +365,7 @@ struct LigatureSubtable
     inline bool is_actionable (StateTableDriver<EntryData> *driver,
 			       const Entry<EntryData> *entry)
     {
-      return !!(entry->flags & PerformAction);
+      return entry->flags & PerformAction;
     }
     inline bool transition (StateTableDriver<EntryData> *driver,
 			    const Entry<EntryData> *entry)
@@ -391,12 +391,20 @@ struct LigatureSubtable
 	unsigned int action_idx = entry->data.ligActionIndex;
 	unsigned int action;
 	unsigned int ligature_idx = 0;
+
+	if (unlikely (!match_length))
+	  return true;
+
+	/* TODO Only when ligation happens? */
+	buffer->merge_out_clusters (match_positions[0], buffer->out_len);
+
+	unsigned int cursor = match_length;
         do
 	{
-	  if (unlikely (!match_length))
-	    return false;
+	  if (unlikely (!cursor))
+	    break;
 
-	  buffer->move_to (match_positions[--match_length]);
+	  buffer->move_to (match_positions[--cursor]);
 
 	  const HBUINT32 &actionData = ligAction[action_idx];
 	  if (unlikely (!actionData.sanitize (&c->sanitizer))) return false;
@@ -404,8 +412,10 @@ struct LigatureSubtable
 
 	  uint32_t uoffset = action & LigActionOffset;
 	  if (uoffset & 0x20000000)
-	    uoffset += 0xC0000000;
+	    uoffset |= 0xC0000000; /* Sign-extend. */
 	  int32_t offset = (int32_t) uoffset;
+	  if (buffer->idx >= buffer->len)
+	    return false; // TODO Work on previous instead?
 	  unsigned int component_idx = buffer->cur().codepoint + offset;
 
 	  const HBUINT16 &componentData = component[component_idx];
@@ -418,21 +428,21 @@ struct LigatureSubtable
 	    if (unlikely (!ligatureData.sanitize (&c->sanitizer))) return false;
 	    hb_codepoint_t lig = ligatureData;
 
-	    match_positions[match_length++] = buffer->out_len;
 	    buffer->replace_glyph (lig);
 
-	    //ligature_idx = 0; // XXX Yes or no?
+	    /* Now go and delete all subsequent components. */
+	    while (match_length - 1 > cursor)
+	    {
+	      buffer->move_to (match_positions[--match_length]);
+	      buffer->skip_glyph ();
+	      end--;
+	    }
 	  }
-	  else
-	  {
-	    buffer->skip_glyph ();
-	    end--;
-	  }
-	  /* TODO merge_clusters / unsafe_to_break */
 
 	  action_idx++;
 	}
 	while (!(action & LigActionLast));
+	match_length = 0;
 	buffer->move_to (end);
       }
 
@@ -620,12 +630,12 @@ struct InsertionSubtable
 	unsigned int end = buffer->out_len;
 	buffer->move_to (mark);
 
-	if (!before)
+	if (buffer->idx < buffer->len && !before)
 	  buffer->copy_glyph ();
 	/* TODO We ignore KashidaLike setting. */
 	for (unsigned int i = 0; i < count; i++)
 	  buffer->output_glyph (glyphs[i]);
-	if (!before)
+	if (buffer->idx < buffer->len && !before)
 	  buffer->skip_glyph ();
 
 	buffer->move_to (end + count);
@@ -644,12 +654,12 @@ struct InsertionSubtable
 
 	unsigned int end = buffer->out_len;
 
-	if (!before)
+	if (buffer->idx < buffer->len && !before)
 	  buffer->copy_glyph ();
 	/* TODO We ignore KashidaLike setting. */
 	for (unsigned int i = 0; i < count; i++)
 	  buffer->output_glyph (glyphs[i]);
-	if (!before)
+	if (buffer->idx < buffer->len && !before)
 	  buffer->skip_glyph ();
 
 	/* Humm. Not sure where to move to.  There's this wording under
@@ -664,6 +674,8 @@ struct InsertionSubtable
 	 * This suggests that if DontAdvance is NOT set, we should move to
 	 * end+count.  If it *was*, then move to end, such that newly inserted
 	 * glyphs are now visible.
+	 *
+	 * https://github.com/harfbuzz/harfbuzz/issues/1224#issuecomment-427691417
 	 */
 	buffer->move_to ((flags & DontAdvance) ? end : end + count);
       }
@@ -750,7 +762,7 @@ struct ChainSubtable
     Vertical		= 0x80000000,	/* If set, this subtable will only be applied
 					 * to vertical text. If clear, this subtable
 					 * will only be applied to horizontal text. */
-    Descending		= 0x40000000,	/* If set, this subtable will process glyphs
+    Backwards		= 0x40000000,	/* If set, this subtable will process glyphs
 					 * in descending order. If clear, it will
 					 * process the glyphs in ascending order. */
     AllDirections	= 0x20000000,	/* If set, this subtable will be applied to
@@ -874,8 +886,8 @@ struct Chain
 				may be right-to-left or left-to-right).
        */
       reverse = subtable->coverage & ChainSubtable::Logical ?
-		bool (subtable->coverage & ChainSubtable::Descending) :
-		bool (subtable->coverage & ChainSubtable::Descending) !=
+		bool (subtable->coverage & ChainSubtable::Backwards) :
+		bool (subtable->coverage & ChainSubtable::Backwards) !=
 		HB_DIRECTION_IS_BACKWARD (c->buffer->props.direction);
 
       if (!c->buffer->message (c->font, "start chain subtable %d", c->lookup_index))
@@ -883,6 +895,8 @@ struct Chain
 
       if (reverse)
         c->buffer->reverse ();
+
+      c->sanitizer.set_object (*subtable);
 
       subtable->dispatch (c);
 
@@ -940,7 +954,7 @@ struct Chain
 
 
 /*
- * The 'mort'/'morx' Tables
+ * The 'morx' Table
  */
 
 struct morx

@@ -49,6 +49,19 @@ HB_INTERNAL const OT::GSUB& _get_gsub_relaxed (hb_face_t *face);
 HB_INTERNAL const OT::GPOS& _get_gpos_relaxed (hb_face_t *face);
 
 
+/*
+ * kern
+ */
+
+HB_INTERNAL hb_bool_t
+hb_ot_layout_has_kerning (hb_face_t *face);
+
+HB_INTERNAL void
+hb_ot_layout_kern (hb_font_t *font,
+		   hb_buffer_t  *buffer,
+		   hb_mask_t kern_mask);
+
+
 /* Private API corresponding to hb-ot-layout.h: */
 
 HB_INTERNAL hb_bool_t
@@ -99,32 +112,16 @@ hb_ot_layout_substitute_start (hb_font_t    *font,
 			       hb_buffer_t  *buffer);
 
 
-struct hb_ot_layout_lookup_accelerator_t
-{
-  template <typename TLookup>
-  inline void init (const TLookup &lookup)
-  {
-    digest.init ();
-    lookup.add_coverage (&digest);
-  }
-  inline void fini (void) {}
-
-  inline bool may_have (hb_codepoint_t g) const
-  { return digest.may_have (g); }
-
-  private:
-  hb_set_digest_t digest;
-};
-
 namespace OT {
   struct hb_ot_apply_context_t;
   struct SubstLookup;
+  struct hb_ot_layout_lookup_accelerator_t;
 }
 
 HB_INTERNAL void
 hb_ot_layout_substitute_lookup (OT::hb_ot_apply_context_t *c,
 				const OT::SubstLookup &lookup,
-				const hb_ot_layout_lookup_accelerator_t &accel);
+				const OT::hb_ot_layout_lookup_accelerator_t &accel);
 
 
 /* Should be called before all the position_lookup's are done. */

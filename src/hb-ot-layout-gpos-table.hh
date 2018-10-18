@@ -973,22 +973,22 @@ struct CursivePosFormat1
     hb_buffer_t *buffer = c->buffer;
 
     const EntryExitRecord &this_record = entryExitRecord[(this+coverage).get_coverage  (buffer->cur().codepoint)];
-    if (!this_record.exitAnchor) return_trace (false);
+    if (!this_record.entryAnchor) return_trace (false);
 
     hb_ot_apply_context_t::skipping_iterator_t &skippy_iter = c->iter_input;
     skippy_iter.reset (buffer->idx, 1);
-    if (!skippy_iter.next ()) return_trace (false);
+    if (!skippy_iter.prev ()) return_trace (false);
 
-    const EntryExitRecord &next_record = entryExitRecord[(this+coverage).get_coverage  (buffer->info[skippy_iter.idx].codepoint)];
-    if (!next_record.entryAnchor) return_trace (false);
+    const EntryExitRecord &prev_record = entryExitRecord[(this+coverage).get_coverage  (buffer->info[skippy_iter.idx].codepoint)];
+    if (!prev_record.exitAnchor) return_trace (false);
 
-    unsigned int i = buffer->idx;
-    unsigned int j = skippy_iter.idx;
+    unsigned int i = skippy_iter.idx;
+    unsigned int j = buffer->idx;
 
     buffer->unsafe_to_break (i, j);
     float entry_x, entry_y, exit_x, exit_y;
-    (this+this_record.exitAnchor).get_anchor (c, buffer->info[i].codepoint, &exit_x, &exit_y);
-    (this+next_record.entryAnchor).get_anchor (c, buffer->info[j].codepoint, &entry_x, &entry_y);
+    (this+prev_record.exitAnchor).get_anchor (c, buffer->info[i].codepoint, &exit_x, &exit_y);
+    (this+this_record.entryAnchor).get_anchor (c, buffer->info[j].codepoint, &entry_x, &entry_y);
 
     hb_glyph_position_t *pos = buffer->pos;
 
@@ -1035,7 +1035,7 @@ struct CursivePosFormat1
      * parent.
      *
      * Optimize things for the case of RightToLeft, as that's most common in
-     * Arabinc. */
+     * Arabic. */
     unsigned int child  = i;
     unsigned int parent = j;
     hb_position_t x_offset = entry_x - exit_x;
@@ -1064,7 +1064,7 @@ struct CursivePosFormat1
     else
       pos[child].x_offset = x_offset;
 
-    buffer->idx = j;
+    buffer->idx++;
     return_trace (true);
   }
 
@@ -1658,7 +1658,10 @@ reverse_cursive_minor_offset (hb_glyph_position_t *pos, unsigned int i, hb_direc
   pos[j].attach_type() = type;
 }
 static void
-propagate_attachment_offsets (hb_glyph_position_t *pos, unsigned int i, hb_direction_t direction)
+propagate_attachment_offsets (hb_glyph_position_t *pos,
+			      unsigned int len,
+			      unsigned int i,
+			      hb_direction_t direction)
 {
   /* Adjusts offsets of attached glyphs (both cursive and mark) to accumulate
    * offset of glyph they are attached to. */
@@ -1666,11 +1669,14 @@ propagate_attachment_offsets (hb_glyph_position_t *pos, unsigned int i, hb_direc
   if (likely (!chain))
     return;
 
-  unsigned int j = (int) i + chain;
-
   pos[i].attach_chain() = 0;
 
-  propagate_attachment_offsets (pos, j, direction);
+  unsigned int j = (int) i + chain;
+
+  if (unlikely (j >= len))
+    return;
+
+  propagate_attachment_offsets (pos, len, j, direction);
 
   assert (!!(type & ATTACH_TYPE_MARK) ^ !!(type & ATTACH_TYPE_CURSIVE));
 
@@ -1726,7 +1732,7 @@ GPOS::position_finish_offsets (hb_font_t *font HB_UNUSED, hb_buffer_t *buffer)
   /* Handle attachments */
   if (buffer->scratch_flags & HB_BUFFER_SCRATCH_FLAG_HAS_GPOS_ATTACHMENT)
     for (unsigned int i = 0; i < len; i++)
-      propagate_attachment_offsets (pos, i, direction);
+      propagate_attachment_offsets (pos, len, i, direction);
 }
 
 
@@ -1753,10 +1759,6 @@ template <typename context_t>
 }
 
 struct GPOS_accelerator_t : GPOS::accelerator_t {};
-
-
-#undef attach_chain
-#undef attach_type
 
 
 } /* namespace OT */

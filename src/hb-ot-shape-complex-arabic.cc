@@ -458,9 +458,9 @@ apply_stch (const hb_ot_shape_plan_t *plan,
 
   int sign = font->x_scale < 0 ? -1 : +1;
   unsigned int extra_glyphs_needed = 0; // Set during MEASURE, used during CUT
-  typedef enum { MEASURE, CUT } step_t;
+  enum { MEASURE, CUT } /* step_t */;
 
-  for (step_t step = MEASURE; step <= CUT; step = (step_t) (step + 1))
+  for (unsigned int step = MEASURE; step <= CUT; step = step + 1)
   {
     unsigned int count = buffer->len;
     hb_glyph_info_t *info = buffer->info;
@@ -599,7 +599,7 @@ postprocess_glyphs_arabic (const hb_ot_shape_plan_t *plan,
   HB_BUFFER_DEALLOCATE_VAR (buffer, arabic_shaping_action);
 }
 
-/* https://unicode.org/reports/tr53/tr53-1.pdf */
+/* http://www.unicode.org/reports/tr53/ */
 
 static hb_codepoint_t
 modifier_combining_marks[] =
@@ -611,6 +611,7 @@ modifier_combining_marks[] =
   0x06E3u, /* ARABIC SMALL LOW SEEN */
   0x06E7u, /* ARABIC SMALL HIGH YEH */
   0x06E8u, /* ARABIC SMALL HIGH NOON */
+  0x08D3u, /* ARABIC SMALL LOW WAW */
   0x08F3u, /* ARABIC SMALL HIGH WAW */
 };
 

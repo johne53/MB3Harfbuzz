@@ -69,12 +69,12 @@ test_unicode_LDADD += $(top_builddir)/src/libharfbuzz-icu.la $(ICU_LIBS)
 endif
 
 
-if HAVE_OT
-
 TEST_PROGS += \
 	test-ot-color \
+	test-ot-name \
 	test-ot-tag \
 	$(NULL)
+
 
 if HAVE_PTHREAD
 if HAVE_FREETYPE
@@ -95,7 +95,6 @@ test_ot_math_LDADD = $(LDADD) $(FREETYPE_LIBS)
 test_ot_math_CPPFLAGS = $(AM_CPPFLAGS) $(FREETYPE_CFLAGS)
 endif # HAVE_FREETYPE
 
-endif # HAVE_OT
 
 # Tests for header compilation
 TEST_PROGS += \
