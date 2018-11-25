@@ -5,11 +5,11 @@ require "../local-paths.lib";
 
 $api_version = "1.0";
 $pango_current_minus_age = 0;
-$harfbuzz_version = "1.8.09";
+$harfbuzz_version = "1.10.02";
 $major = 1;
-$minor = 8;
-$micro = 9;
-$interface_age = 9;
+$minor = 10;
+$micro = 2;
+$interface_age = 2;
 $current_minus_age = 0;
 $exec_prefix = "lib";
 
@@ -43,6 +43,12 @@ sub process_file
 	    s/\@Release32TestSuiteFolder@/$release32_testsuite_folder/g;
 	    s/\@Debug32TargetFolder@/$debug32_target_folder/g;
 	    s/\@Release32TargetFolder@/$release32_target_folder/g;
+	    s/\@GenericWin64LibraryFolder@/$generic_win64_library_folder/g;
+	    s/\@GenericWin64BinaryFolder@/$generic_win64_binary_folder/g;
+	    s/\@Debug64TestSuiteFolder@/$debug64_testsuite_folder/g;
+	    s/\@Release64TestSuiteFolder@/$release64_testsuite_folder/g;
+	    s/\@Debug64TargetFolder@/$debug64_target_folder/g;
+	    s/\@Release64TargetFolder@/$release64_target_folder/g;
 	    s/\@TargetSxSFolder@/$target_sxs_folder/g;
 	    s/\@prefix@/$prefix/g;
 	    s/\@exec_prefix@/$exec_prefix/g;
@@ -56,5 +62,6 @@ process_file ("src/harfbuzz.pc");
 
 my $command=join(' ',@ARGV);
 if ($command eq -buildall) {
+	process_file ("msvc/harfbuzz.props");
 	process_file ("msvc/harfbuzz.vsprops");
 }
