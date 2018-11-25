@@ -1,0 +1,262 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release with Debugging Capability|x64">
+      <Configuration>Release with Debugging Capability</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{678FF1C8-3E42-4482-B4A4-C5DD73428060}</ProjectGuid>
+    <RootNamespace>harfbuzz</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release with Debugging Capability|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release with Debugging Capability|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
+    <Import Project="harfbuzz.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
+    <Import Project="harfbuzz.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
+    <Import Project="harfbuzz.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>14.0.25431.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(PangoBuildProjectFolder)\$(Platform)\$(Configuration)\bin\</OutDir>
+    <IntDir>$(PangoBuildProjectFolder)\$(Platform)\$(Configuration)\obj\$(ProjectName)\</IntDir>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(PangoBuildProjectFolder)\$(Platform)\$(Configuration)\bin\</OutDir>
+    <IntDir>$(PangoBuildProjectFolder)\$(Platform)\$(Configuration)\obj\$(ProjectName)\</IntDir>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release with Debugging Capability|x64'">
+    <OutDir>$(PangoBuildProjectFolder)\$(Platform)\$(Configuration)\bin\</OutDir>
+    <IntDir>$(PangoBuildProjectFolder)\$(Platform)\$(Configuration)\obj\$(ProjectName)\</IntDir>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalOptions>/FI$(TargetSxsFolder)\targetsxs.h %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>.;$(GenericIncludeFolder)\pango-$(PangoApiVersion);$(GenericIncludeFolder)\pango-$(PangoApiVersion)\pango;$(GenericLibraryFolder)\glib-2.0\include;$(GenericIncludeFolder)\freetype;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WIN64;_WIN32;WIN32;DEBUG;_DEBUG;_WINDOWS;_LIB;_CRT_SECURE_NO_WARNINGS;HB_DONT_DEFINE_STDINT;HAVE_GLIB=1;HAVE_OT=1;HAVE_FALLBACK=1;HAVE_FREETYPE=1;PANGO_ENABLE_BACKEND;PANGO_ENABLE_ENGINE;G_LOG_DOMAIN="Pango";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <PrecompiledHeaderOutputFile>.\Debug\libharfbuzz/libharfbuzz.pch</PrecompiledHeaderOutputFile>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ForcedIncludeFiles>$(TargetSxsFolder)\targetsxs.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0809</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(LibPrefix)$(ProjectName)64D.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\Debug\libharfbuzz/libharfbuzz.bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalOptions>/FI$(TargetSxsFolder)\targetsxs.h %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <AdditionalIncludeDirectories>.;$(GenericIncludeFolder)\pango-$(PangoApiVersion);$(GenericIncludeFolder)\pango-$(PangoApiVersion)\pango;$(GenericLibraryFolder)\glib-2.0\include;$(GenericIncludeFolder)\freetype;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_SECURE_SCL=0;_WIN64;_WIN32;WIN32;NDEBUG;_WINDOWS;_LIB;_CRT_SECURE_NO_WARNINGS;HB_DONT_DEFINE_STDINT;HAVE_GLIB=1;HAVE_OT=1;HAVE_FALLBACK=1;HAVE_FREETYPE=1;PANGO_ENABLE_BACKEND;PANGO_ENABLE_ENGINE;G_LOG_DOMAIN="Pango";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>false</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <PrecompiledHeaderOutputFile>.\Release\libharfbuzz/libharfbuzz.pch</PrecompiledHeaderOutputFile>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ForcedIncludeFiles>$(TargetSxsFolder)\targetsxs.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0809</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(LibPrefix)$(ProjectName)64.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\Release\libharfbuzz/libharfbuzz.bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release with Debugging Capability|x64'">
+    <PreBuildEvent>
+      <Command />
+    </PreBuildEvent>
+    <ClCompile>
+      <AdditionalOptions>/FI$(TargetSxsFolder)\targetsxs.h %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>.;$(GenericIncludeFolder)\pango-$(PangoApiVersion);$(GenericIncludeFolder)\pango-$(PangoApiVersion)\pango;$(GenericLibraryFolder)\glib-2.0\include;$(GenericIncludeFolder)\freetype;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>SECURE_SCL=0;_WIN64;_WIN32;WIN32;NDEBUG;_WINDOWS;_LIB;_CRT_SECURE_NO_WARNINGS;HB_DONT_DEFINE_STDINT;HAVE_GLIB=1;HAVE_OT=1;HAVE_FALLBACK=1;HAVE_FREETYPE=1;PANGO_ENABLE_BACKEND;PANGO_ENABLE_ENGINE;G_LOG_DOMAIN="Pango";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>false</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <PrecompiledHeaderOutputFile>.\Release\libharfbuzz/libharfbuzz.pch</PrecompiledHeaderOutputFile>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ForcedIncludeFiles>$(TargetSxsFolder)\targetsxs.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0809</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(LibPrefix)$(ProjectName)64RDC.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\Release\libharfbuzz/libharfbuzz.bsc</OutputFile>
+    </Bscmake>
+    <PostBuildEvent>
+      <Command>mkdir "$(GenericLibraryFolder)\pkgconfig" 2&gt; NUL
+mkdir "$(GenericIncludeFolder)\harfbuzz" 2&gt; NUL
+copy /Y "..\src\*.h" "$(GenericIncludeFolder)\harfbuzz"
+copy /Y "..\src\harfbuzz.pc" "$(GenericLibraryFolder)\pkgconfig"
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\hb-aat-layout.cc" />
+    <ClCompile Include="..\src\hb-blob.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release with Debugging Capability|x64'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Release with Debugging Capability|x64'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
+    </ClCompile>
+    <ClCompile Include="..\src\hb-buffer.cc" />
+    <ClCompile Include="..\src\hb-common.cc" />
+    <ClCompile Include="..\src\hb-face.cc" />
+    <ClCompile Include="..\src\hb-fallback-shape.cc" />
+    <ClCompile Include="..\src\hb-font.cc" />
+    <ClCompile Include="..\src\hb-ft.cc" />
+    <ClCompile Include="..\src\hb-glib.cc" />
+    <ClCompile Include="..\src\hb-map.cc" />
+    <ClCompile Include="..\src\hb-ot-color.cc" />
+    <ClCompile Include="..\src\hb-ot-face.cc" />
+    <ClCompile Include="..\src\hb-ot-font.cc" />
+    <ClCompile Include="..\src\hb-ot-layout.cc" />
+    <ClCompile Include="..\src\hb-ot-map.cc" />
+    <ClCompile Include="..\src\hb-ot-math.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-complex-arabic.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-complex-default.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-complex-hangul.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-complex-hebrew.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-complex-indic-table.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-complex-indic.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-complex-khmer.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-complex-myanmar.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-complex-thai.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-complex-use-table.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-complex-use.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-fallback.cc" />
+    <ClCompile Include="..\src\hb-ot-shape-normalize.cc" />
+    <ClCompile Include="..\src\hb-ot-shape.cc" />
+    <ClCompile Include="..\src\hb-ot-tag.cc" />
+    <ClCompile Include="..\src\hb-ot-var.cc" />
+    <ClCompile Include="..\src\hb-set.cc" />
+    <ClCompile Include="..\src\hb-shape-plan.cc" />
+    <ClCompile Include="..\src\hb-shape.cc" />
+    <ClCompile Include="..\src\hb-shaper.cc" />
+    <ClCompile Include="..\src\hb-static.cc" />
+    <ClCompile Include="..\src\hb-unicode.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\hb-blob.h" />
+    <ClInclude Include="..\src\hb-buffer.h" />
+    <ClInclude Include="..\src\hb-common.h" />
+    <ClInclude Include="..\src\hb-coretext.h" />
+    <ClInclude Include="..\src\hb-face.h" />
+    <ClInclude Include="..\src\hb-font.h" />
+    <ClInclude Include="..\src\hb-ft.h" />
+    <ClInclude Include="..\src\hb-glib.h" />
+    <ClInclude Include="..\src\hb-icu.h" />
+    <ClInclude Include="..\src\hb-map.h" />
+    <ClInclude Include="..\src\hb-ot-font.h" />
+    <ClInclude Include="..\src\hb-ot-layout.h" />
+    <ClInclude Include="..\src\hb-ot-math.h" />
+    <ClInclude Include="..\src\hb-ot-shape.h" />
+    <ClInclude Include="..\src\hb-ot-tag.h" />
+    <ClInclude Include="..\src\hb-ot-var.h" />
+    <ClInclude Include="..\src\hb-ot.h" />
+    <ClInclude Include="..\src\hb-set.h" />
+    <ClInclude Include="..\src\hb-shape-plan.h" />
+    <ClInclude Include="..\src\hb-shape.h" />
+    <ClInclude Include="..\src\hb-unicode.h" />
+    <ClInclude Include="..\src\hb-uniscribe.h" />
+    <ClInclude Include="..\src\hb-version.h" />
+    <ClInclude Include="..\src\hb.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
