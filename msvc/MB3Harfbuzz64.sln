@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{4C43940A-70C8-4ae2-B16B-D0F7F51F03D9}") = "harfbuzz", "harfbuzz.vcxproj", "{678FF1C8-3E42-4482-B4A4-C5DD73428060}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release with Debugging Capability|x64 = Release with Debugging Capability|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{678FF1C8-3E42-4482-B4A4-C5DD73428060}.Debug|x64.ActiveCfg = Debug|x64
+		{678FF1C8-3E42-4482-B4A4-C5DD73428060}.Debug|x64.Build.0 = Debug|x64
+		{678FF1C8-3E42-4482-B4A4-C5DD73428060}.Release with Debugging Capability|x64.ActiveCfg = Release with Debugging Capability|x64
+		{678FF1C8-3E42-4482-B4A4-C5DD73428060}.Release with Debugging Capability|x64.Build.0 = Release with Debugging Capability|x64
+		{678FF1C8-3E42-4482-B4A4-C5DD73428060}.Release|x64.ActiveCfg = Release|x64
+		{678FF1C8-3E42-4482-B4A4-C5DD73428060}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
