@@ -92,7 +92,6 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>.;$(GenericIncludeFolder)\pango-$(PangoApiVersion);$(GenericIncludeFolder)\pango-$(PangoApiVersion)\pango;$(GenericLibraryFolder)\glib-2.0\include;$(GenericIncludeFolder)\freetype;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_WIN64;_WIN32;WIN32;DEBUG;_DEBUG;_WINDOWS;_LIB;_CRT_SECURE_NO_WARNINGS;HB_DONT_DEFINE_STDINT;HAVE_GLIB=1;HAVE_OT=1;HAVE_FALLBACK=1;HAVE_FREETYPE=1;PANGO_ENABLE_BACKEND;PANGO_ENABLE_ENGINE;G_LOG_DOMAIN="Pango";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
